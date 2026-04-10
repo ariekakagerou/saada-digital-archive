@@ -1,0 +1,2 @@
+-- Place migration scripts here
+-- Example: ALTER TABLE alumni ADD COLUMN email VARCHAR(100);
