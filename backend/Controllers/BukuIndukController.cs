@@ -220,6 +220,88 @@ namespace AlumniSmartArchive.Backend.Controllers
             return CreatedAtAction(nameof(GetById), new { id = bukuInduk.Id }, MapToResponse(bukuInduk));
         }
 
+        // POST: api/bukuinduk/import
+        [HttpPost("import")]
+        public async Task<IActionResult> Import([FromBody] List<CreateBukuIndukRequest> requests)
+        {
+            if (requests == null || !requests.Any())
+                return BadRequest(new { message = "Data tidak boleh kosong" });
+
+            int addedCount = 0;
+            int skippedCount = 0;
+
+            foreach (var req in requests)
+            {
+                // Skip jika NISN sudah ada (mencegah duplikasi)
+                if (await _context.BukuInduks.AnyAsync(b => b.Nisn == req.Nisn))
+                {
+                    skippedCount++;
+                    continue;
+                }
+
+                // Cari atau buat Alumni
+                var alumni = await _context.Alumni.FirstOrDefaultAsync(a => a.Nisn == req.Nisn);
+                if (alumni == null)
+                {
+                    alumni = new Alumni
+                    {
+                        Nisn = req.Nisn,
+                        Nis = req.Nis,
+                        FullName = req.NamaLengkap,
+                        JenisKelamin = req.JenisKelamin,
+                        TempatLahir = req.TempatLahir ?? "",
+                        GraduationYear = int.TryParse(req.TahunLulus, out var yr) ? yr : 0,
+                    };
+                    _context.Alumni.Add(alumni);
+                    await _context.SaveChangesAsync();
+                }
+
+                var bukuInduk = new BukuInduk
+                {
+                    AlumniId = alumni.Id,
+                    Nis = req.Nis,
+                    Nisn = req.Nisn,
+                    NamaLengkap = req.NamaLengkap,
+                    JenisKelamin = req.JenisKelamin,
+                    TempatLahir = req.TempatLahir ?? "",
+                    TanggalLahir = req.TanggalLahir ?? "",
+                    Agama = req.Agama ?? "",
+                    Kewarganegaraan = req.Kewarganegaraan ?? "WNI",
+                    
+                    // Data Keluarga
+                    NamaAyah = req.NamaAyah ?? "",
+                    NamaIbu = req.NamaIbu ?? "",
+                    PekerjaanAyah = req.PekerjaanAyah ?? "",
+                    PekerjaanIbu = req.PekerjaanIbu ?? "",
+                    AlamatOrangTua = req.AlamatOrangTua ?? "",
+                    NoHpWali = req.NoHpWali ?? "",
+
+                    // Data Sekolah
+                    TahunMasuk = req.TahunMasuk ?? "",
+                    AsalSekolah = req.AsalSekolah ?? "",
+                    KelasMasuk = req.KelasMasuk ?? "",
+                    TahunLulus = req.TahunLulus ?? "",
+                    NomorIjazah = req.NomorIjazah ?? "",
+                    StatusKelulusan = req.StatusKelulusan ?? "Lulus",
+                    StatusArsip = req.StatusArsip ?? "Lengkap",
+                    
+                    DibuatPada = DateTime.UtcNow,
+                    DiperbaruiPada = DateTime.UtcNow
+                };
+
+                _context.BukuInduks.Add(bukuInduk);
+                addedCount++;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { 
+                success = true, 
+                message = $"Berhasil mengimpor {addedCount} data. {skippedCount} data dilewati karena duplikasi NISN.",
+                added = addedCount,
+                skipped = skippedCount
+            });
+        }
+
         // PUT: api/bukuinduk/5
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] CreateBukuIndukRequest request)
@@ -392,6 +474,7 @@ namespace AlumniSmartArchive.Backend.Controllers
             return new BukuIndukResponse
             {
                 Id = b.Id,
+                AlumniId = b.AlumniId,
                 Nis = b.Nis,
                 Nisn = b.Nisn,
                 NamaLengkap = b.NamaLengkap,

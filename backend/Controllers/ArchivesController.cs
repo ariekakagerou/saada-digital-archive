@@ -22,6 +22,35 @@ namespace AlumniSmartArchive.Backend.Controllers
             _env = env;
         }
 
+        // GET: api/archives?jenis=Ijazah
+        [HttpGet]
+        public async Task<IActionResult> GetArchives([FromQuery] string? jenis)
+        {
+            var query = _context.Archives
+                .Include(a => a.OcrResult)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(jenis))
+            {
+                query = query.Where(a => a.JenisArsip == jenis);
+            }
+
+            var results = await query
+                .OrderByDescending(a => a.UploadedAt)
+                .ToListAsync();
+
+            return Ok(results.Select(a => new {
+                id = a.Id,
+                alumniId = a.AlumniId,
+                filePath = a.FilePath,
+                fileType = a.FileType,
+                jenisArsip = a.JenisArsip,
+                statusArsip = a.StatusArsip,
+                uploadedAt = a.UploadedAt,
+                confidence = a.OcrResult?.ConfidenceScore ?? 0
+            }));
+        }
+
         [HttpPost("upload")]
         public async Task<IActionResult> UploadArchive([FromForm] UploadRequest request)
         {
@@ -69,12 +98,44 @@ namespace AlumniSmartArchive.Backend.Controllers
             _context.Archives.Add(archive);
             await _context.SaveChangesAsync();
 
+            // 4. Log Activity
+            await LogActivity("Unggah Arsip", $"Mengunggah {request.JenisArsip}: {fileName}", "Sukses");
+
             return Ok(new 
             { 
                 message = "Berhasil diunggah dan diproses", 
                 data = new { archive.Id, archive.FilePath, archive.JenisArsip, archive.FileType },
-                ocr = ocrData 
+                ocr = ocrData,
+                smartAnalysis = new {
+                    suggestedCategory = ocrData?.SuggestedCategory,
+                    isMatch = ocrData?.SuggestedCategory == request.JenisArsip,
+                    llmCleaned = ocrData?.LlmCleanedData
+                }
             });
+        }
+
+        [HttpPost("evaluate")]
+        public async Task<IActionResult> EvaluateOcr([FromForm] UploadRequest request)
+        {
+            if (request.File == null || request.File.Length == 0)
+                return BadRequest("File tidak boleh kosong");
+
+            using (var stream = request.File.OpenReadStream())
+            {
+                var comparisonData = await _aiService.ProcessOcrCompareAsync(stream, request.File.FileName);
+                
+                if (comparisonData == null)
+                    return StatusCode(500, "Gagal memproses evaluasi OCR");
+
+                await LogActivity("Evaluasi OCR", $"Melakukan perbandingan OCR pada file: {request.File.FileName}", "Sukses");
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Evaluasi komparatif berhasil",
+                    data = comparisonData
+                });
+            }
         }
 
         [HttpGet("{id}")]
@@ -90,6 +151,7 @@ namespace AlumniSmartArchive.Backend.Controllers
             return Ok(new
             {
                 id = archive.Id,
+                alumniId = archive.AlumniId,
                 filePath = archive.FilePath,
                 fileType = archive.FileType,
                 jenisArsip = archive.JenisArsip,
@@ -130,7 +192,31 @@ namespace AlumniSmartArchive.Backend.Controllers
             _context.Archives.Remove(archive);
             await _context.SaveChangesAsync();
 
+            await LogActivity("Hapus Arsip", $"Menghapus arsip ID: {id}", "Sukses");
+
             return Ok(new { message = "Arsip fisik dan data berhasil dihapus permanen" });
+        }
+
+        private async Task LogActivity(string aksi, string target, string status)
+        {
+            try
+            {
+                var log = new LogAktivitas
+                {
+                    Aksi = aksi,
+                    TargetObjek = target,
+                    Status = status,
+                    NamaPengguna = User.Identity?.Name ?? "Sistem",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    Waktu = DateTime.UtcNow
+                };
+                _context.LogAktivitas.Add(log);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Gagal mencatat log: {ex.Message}");
+            }
         }
     }
 }

@@ -1,0 +1,140 @@
+/* Alumni Page Responsive Styles */
+
+/* Desktop: Table layout */
+.alumni-table-row {
+    display: flex;
+    align-items: center;
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+.alumni-table-row:hover {
+    background: #f9fafb;
+}
+
+.alumni-table-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* Mobile: Card layout */
+@media (max-width: 1024px) {
+    .alumni-table-header {
+        display: none !important;
+    }
+
+    .alumni-table-row {
+        display: block !important;
+        padding: 1.5rem !important;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .alumni-table-row>div {
+        width: 100% !important;
+        flex: none !important;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right !important;
+    }
+
+    .alumni-table-row>div:last-child {
+        margin-bottom: 0;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f3f4f6;
+        display: block;
+        text-align: center !important;
+    }
+
+    /* Add labels for mobile */
+    .alumni-table-row>div::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        text-align: left;
+        margin-right: 1rem;
+    }
+
+    .alumni-table-row>div:nth-child(1)::before {
+        content: "Nama Alumni";
+    }
+
+    .alumni-table-row>div:nth-child(2)::before {
+        content: "NIS";
+    }
+
+    .alumni-table-row>div:nth-child(3)::before {
+        content: "Kelas";
+    }
+
+    .alumni-table-row>div:nth-child(4)::before {
+        content: "Tahun Lulus";
+    }
+
+    .alumni-table-row>div:nth-child(5)::before {
+        content: "Jenis Arsip";
+    }
+
+    .alumni-table-row>div:nth-child(6)::before {
+        content: "Status";
+    }
+}
+
+/* Search bar responsive */
+@media (max-width: 768px) {
+    .search-container {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+
+    .search-container>div {
+        width: 100% !important;
+    }
+
+    .search-container button {
+        width: 100%;
+        padding: 0.85rem !important;
+    }
+
+    .filter-links {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+        padding-top: 0.5rem;
+    }
+
+    .pagination-container {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+}
+
+/* Detail page responsive */
+@media (max-width: 768px) {
+    .detail-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
+    }
+
+    .responsive-split {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+    }
+}

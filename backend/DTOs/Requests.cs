@@ -69,6 +69,7 @@ namespace AlumniSmartArchive.Backend.DTOs
     public class BukuIndukResponse
     {
         public int Id { get; set; }
+        public int AlumniId { get; set; }
         // Identitas
         public string Nis { get; set; } = string.Empty;
         public string Nisn { get; set; } = string.Empty;

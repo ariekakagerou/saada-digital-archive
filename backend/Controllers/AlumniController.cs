@@ -79,36 +79,49 @@ namespace AlumniSmartArchive.Backend.Controllers
                 .Include(a => a.Mutasis)
                 .FirstOrDefaultAsync(a => a.Id == id);
                 
-            if (alumni == null) return NotFound(new { success = false, message = "Alumni tidak ditemukan" });
+            BukuInduk? bukuInduk = null;
+            if (alumni == null) 
+            {
+                // Fallback: Try to find by BukuInduk Id
+                bukuInduk = await _context.BukuInduks
+                    .Include(b => b.NilaiSemesters)
+                    .Include(b => b.Ekstrakurikulers)
+                    .Include(b => b.PrestasiLombas)
+                    .FirstOrDefaultAsync(b => b.Id == id);
 
-            // Also get related buku induk data
-            var bukuInduk = await _context.BukuInduks
-                .Include(b => b.NilaiSemesters)
-                .Include(b => b.Ekstrakurikulers)
-                .Include(b => b.PrestasiLombas)
-                .FirstOrDefaultAsync(b => b.AlumniId == id);
+                if (bukuInduk == null)
+                    return NotFound(new { success = false, message = "Data tidak ditemukan" });
+            }
+            else 
+            {
+                // Normal flow: Get related buku induk data
+                bukuInduk = await _context.BukuInduks
+                    .Include(b => b.NilaiSemesters)
+                    .Include(b => b.Ekstrakurikulers)
+                    .Include(b => b.PrestasiLombas)
+                    .FirstOrDefaultAsync(b => b.AlumniId == id);
+            }
 
             // Get related archives
-            var archives = await _context.Archives
-                .Include(a => a.OcrResult)
-                .Where(a => a.AlumniId == id)
-                .ToListAsync();
+            var archives = alumni != null 
+                ? await _context.Archives.Include(a => a.OcrResult).Where(a => a.AlumniId == alumni.Id).ToListAsync()
+                : new List<Archive>();
 
             var mappedData = new AlumniMappedDto
             {
-                Id = alumni.Id,
-                NamaLengkap = bukuInduk?.NamaLengkap ?? alumni.FullName,
-                Nis = bukuInduk?.Nis ?? alumni.Nis,
-                Nisn = bukuInduk?.Nisn ?? alumni.Nisn,
-                TempatLahir = bukuInduk?.TempatLahir ?? alumni.TempatLahir,
+                Id = alumni?.Id ?? (bukuInduk?.Id ?? id),
+                NamaLengkap = bukuInduk?.NamaLengkap ?? (alumni?.FullName ?? "Unknown"),
+                Nis = bukuInduk?.Nis ?? alumni?.Nis,
+                Nisn = bukuInduk?.Nisn ?? alumni?.Nisn,
+                TempatLahir = bukuInduk?.TempatLahir ?? alumni?.TempatLahir,
                 TanggalLahir = string.IsNullOrWhiteSpace(bukuInduk?.TanggalLahir) 
-                    ? alumni.BirthDate 
-                    : DateTime.TryParse(bukuInduk.TanggalLahir, out var dob) ? dob : alumni.BirthDate,
-                JenisKelamin = bukuInduk?.JenisKelamin ?? alumni.JenisKelamin,
+                    ? alumni?.BirthDate 
+                    : DateTime.TryParse(bukuInduk.TanggalLahir, out var dob) ? dob : alumni?.BirthDate,
+                JenisKelamin = bukuInduk?.JenisKelamin ?? alumni?.JenisKelamin,
                 Agama = bukuInduk?.Agama,
                 Kewarganegaraan = bukuInduk?.Kewarganegaraan,
                 
-                TahunLulus = int.TryParse(bukuInduk?.TahunLulus, out var yr) ? yr : alumni.GraduationYear,
+                TahunLulus = int.TryParse(bukuInduk?.TahunLulus, out var yr) ? yr : (alumni?.GraduationYear ?? 0),
                 NomorIjazah = bukuInduk?.NomorIjazah,
                 NomorSkhun = bukuInduk?.NomorSkhun,
                 StatusKelulusan = bukuInduk?.StatusKelulusan ?? "Lulus",
@@ -116,7 +129,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
                 OrangTua = bukuInduk == null ? null : new OrangTuaDto
                 {
-                    AlumniId = alumni.Id,
+                    AlumniId = alumni?.Id ?? bukuInduk.Id,
                     NamaAyah = bukuInduk.NamaAyah,
                     PekerjaanAyah = bukuInduk.PekerjaanAyah,
                     NamaIbu = bukuInduk.NamaIbu,
@@ -127,7 +140,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
                 DataMasuk = bukuInduk == null ? null : new DataMasukDto
                 {
-                    AlumniId = alumni.Id,
+                    AlumniId = alumni?.Id ?? bukuInduk.Id,
                     AsalSekolah = bukuInduk.AsalSekolah,
                     KelasAwal = bukuInduk.KelasMasuk,
                     TahunAjaranMasuk = bukuInduk.TahunMasuk
@@ -135,17 +148,17 @@ namespace AlumniSmartArchive.Backend.Controllers
 
                 RiwayatAkademik = bukuInduk?.NilaiSemesters?.Select(ns => new RiwayatAkademikDto
                 {
-                    AlumniId = alumni.Id,
+                    AlumniId = alumni?.Id ?? bukuInduk.Id,
                     TingkatKelas = ns.Semester.Contains("VII") && !ns.Semester.Contains("VIII") ? "VII" : ns.Semester.Contains("VIII") ? "VIII" : "IX",
                     TahunAjaran = ns.Semester,
                     Keterangan = $"Rata-rata Semester: {ns.RataRata}",
                     CatatanPrestasi = bukuInduk.PrestasiAkademik
                 }).ToList() ?? new List<RiwayatAkademikDto>(),
 
-                Mutasi = alumni.Mutasis?.Select(m => new MutasiDto
+                Mutasi = alumni?.Mutasis?.Select(m => new MutasiDto
                 {
                     Id = m.Id,
-                    AlumniId = m.AlumniId,
+                    AlumniId = alumni?.Id ?? bukuInduk.Id,
                     JenisMutasi = m.JenisMutasi,
                     TanggalMutasi = m.TanggalMutasi,
                     SekolahAsalTujuan = m.SekolahAsalTujuan,
@@ -155,7 +168,7 @@ namespace AlumniSmartArchive.Backend.Controllers
                 ArsipDokumen = archives.Select(a => new ArsipDokumenDto
                 {
                     Id = a.Id,
-                    AlumniId = alumni.Id,
+                    AlumniId = alumni?.Id ?? (bukuInduk?.Id ?? 0),
                     JenisDokumen = a.JenisArsip,
                     NamaFile = System.IO.Path.GetFileName(a.FilePath),
                     PathFile = a.FilePath,
@@ -167,7 +180,7 @@ namespace AlumniSmartArchive.Backend.Controllers
                     OcrConfidence = a.OcrResult?.ConfidenceScore
                 }).ToList(),
 
-                CreatedAt = alumni.DibuatPada
+                CreatedAt = alumni?.DibuatPada ?? (bukuInduk?.DibuatPada ?? DateTime.UtcNow)
             };
 
             return Ok(new { success = true, data = mappedData });

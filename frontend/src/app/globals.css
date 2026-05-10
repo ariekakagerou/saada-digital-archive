@@ -1,0 +1,380 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* --- Exact Theme from Image --- */
+
+  /* Primary Green (Header & Sidebar) */
+  --header-bg: #2E7D32;
+  /* Strong Green from logo */
+  --sidebar-bg: #1B5E20;
+  /* Darker Green for Sidebar Background */
+  --sidebar-text: #f0fdf4;
+  /* White/Mint Tint Text */
+  --sidebar-text-active: #ffffff;
+  --sidebar-bg-active: #2E7D32;
+  /* Match Header for contrast against Sidebar bg */
+  --sidebar-border: #FDCB01;
+  /* Accent Yellow from logo for border-active */
+
+  /* Backgrounds */
+  --bg-main: #f9fafb;
+  /* Light Gray Background */
+  --bg-surface: #ffffff;
+
+  /* Card Colors (Pastels) */
+  --card-yellow-bg: #fff9c4;
+  --card-yellow-text: #854d0e;
+
+  --card-green-bg: #dcfce7;
+  --card-green-text: #166534;
+
+  --card-blue-bg: #dbeafe;
+  --card-blue-text: #1e40af;
+
+  --card-red-bg: #fee2e2;
+  --card-red-text: #991b1b;
+
+  /* Action Buttons */
+  --btn-yellow: #FDCB01;
+  --btn-teal: #00796B;
+  --btn-green: #4CAF50;
+  --btn-dark-green: #2E7D32;
+
+  /* Typography */
+  --text-heading: #1f2937;
+  --text-body: #4b5563;
+  --text-white: #ffffff;
+
+  /* Standard UI */
+  --border: #e5e7eb;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Fix for standard scrollbar behavior */
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  /* Hide scrollbar on html root */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* ===== HIDE SCROLLBAR GLOBALLY (but keep scroll functionality) ===== */
+/* Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  height: 0px;
+}
+
+/* Firefox + Universal scrollbar hiding */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;    /* IE 10+ */
+}
+
+body {
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Smooth scroll on iOS */
+  -webkit-overflow-scrolling: touch;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* --- Component Styles --- */
+
+/* 1. Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.25);
+  /* Green glow */
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(4, 120, 87, 0.35);
+}
+
+.btn-secondary {
+  background: var(--bg-surface);
+  color: var(--text-heading);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* 2. Glass / Card Panels */
+.glass-panel {
+  background: var(--bg-surface);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  /* Optional: subtle geometric pattern overlay */
+  background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* 3. Sidebar Specifics - Handled in Sidebar.tsx to ensure dynamic active states */
+
+/* --- Responsive Layout Utilities --- */
+
+.admin-main {
+  margin-left: 260px;
+  margin-top: 68px;
+  padding: 2rem;
+  width: calc(100% - 260px);
+  height: calc(100vh - 68px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: all 0.3s ease;
+  /* Hide scrollbar but keep scrollability */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-main::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.sidebar-container {
+  position: fixed;
+  top: 68px;
+  left: 0;
+  bottom: 0;
+  width: 260px;
+  z-index: 40;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-container::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Stats / Action Grids */
+.responsive-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+/* Split Views */
+.responsive-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+/* Charts Grid */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.bar-chart-container {
+  gap: 1.5rem;
+}
+
+/* Mobile & Tablet Responsive */
+@media (max-width: 1024px) {
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    /* 2 cols on tablet */
+  }
+}
+
+@media (max-width: 768px) {
+
+  /* Hide Sidebar on Mobile */
+  .sidebar-container {
+    display: none !important;
+  }
+
+  /* Reset Main Content Margin */
+  .admin-main {
+    margin-left: 0 !important;
+    margin-top: 60px !important;
+    width: 100% !important;
+    height: calc(100vh - 130px) !important; /* height minus mobile header (60px) and bottom nav (70px) */
+    padding: 1rem !important;
+    padding-bottom: 2rem !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Stack Grids */
+  .responsive-grid-4 {
+    grid-template-columns: 1fr;
+    /* 1 col on mobile */
+    gap: 1rem;
+  }
+
+  .responsive-split {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .chart-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    text-align: center;
+  }
+
+  .bar-chart-container {
+    gap: 0.5rem;
+  }
+
+  /* Responsive Containers */
+  .max-w-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* Toast notification mobile */
+  .toast-notification {
+    left: 1rem !important;
+    right: 1rem !important;
+    top: 1rem !important;
+    width: auto !important;
+    justify-content: center !important;
+  }
+
+  /* Mobile Grid gaps */
+  .gap-responsive {
+    gap: 1rem !important;
+  }
+
+  /* Header adjustments */
+  header {
+    /* Assuming inline styles are removed or overridden if possible, or we rely on main layout handling */
+    padding: 0 1rem !important;
+  }
+
+  header h1 {
+    font-size: 1.5rem !important;
+  }
+
+  header p {
+    font-size: 0.9rem !important;
+  }
+
+  /* History Table Responsive */
+  .history-table-header {
+    display: none !important;
+  }
+
+  .history-table-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 1.5rem !important;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    background: white;
+  }
+
+  .history-table-row>div {
+    width: 100% !important;
+    flex: none !important;
+    margin-bottom: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .history-table-row>div::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  /* Show Bottom Nav */
+  .bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: white;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+    z-index: 50;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+.bottom-nav {
+  display: none;
+  /* Hidden by default on desktop */
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.5rem;
+  width: 100%;
+}
+
+.bottom-nav-item.active {
+  color: var(--header-bg);
+  font-weight: 600;
+}

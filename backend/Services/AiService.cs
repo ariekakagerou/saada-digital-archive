@@ -6,6 +6,7 @@ namespace AlumniSmartArchive.Backend.Services
     public interface IAiService
     {
         Task<OcrResponse?> ProcessOcrAsync(Stream fileStream, string fileName);
+        Task<ComparativeOcrResponse?> ProcessOcrCompareAsync(Stream fileStream, string fileName);
         Task<FuzzySearchResponse?> FuzzySearchAsync(string query, List<string> candidates);
     }
 
@@ -39,6 +40,26 @@ namespace AlumniSmartArchive.Backend.Services
             }
         }
 
+        public async Task<ComparativeOcrResponse?> ProcessOcrCompareAsync(Stream fileStream, string fileName)
+        {
+            try
+            {
+                using var content = new MultipartFormDataContent();
+                var fileContent = new StreamContent(fileStream);
+                content.Add(fileContent, "file", fileName);
+
+                var response = await _httpClient.PostAsync("/ocr-compare", content);
+                response.EnsureSuccessStatusCode();
+
+                return await response.Content.ReadFromJsonAsync<ComparativeOcrResponse>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"AI Service Compare Error: {ex.Message}");
+                return null;
+            }
+        }
+
         public async Task<FuzzySearchResponse?> FuzzySearchAsync(string query, List<string> candidates)
         {
             try
@@ -63,6 +84,24 @@ namespace AlumniSmartArchive.Backend.Services
         public string Text { get; set; } = string.Empty;
         public double Confidence { get; set; }
         public Dictionary<string, object>? ExtractedData { get; set; }
+        public string SuggestedCategory { get; set; } = "Lainnya";
+        public Dictionary<string, object>? LlmCleanedData { get; set; }
+    }
+
+    public class ComparativeOcrResponse
+    {
+        public string Filename { get; set; } = string.Empty;
+        public List<ComparisonResult> Results { get; set; } = new();
+        public string Best_Method { get; set; } = string.Empty;
+    }
+
+    public class ComparisonResult
+    {
+        public string Method { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public double Confidence { get; set; }
+        public Dictionary<string, object>? ExtractedData { get; set; }
+        public double Processing_Time { get; set; }
     }
 
     public class FuzzySearchResponse

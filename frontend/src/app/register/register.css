@@ -1,0 +1,64 @@
+/* register.css - Shared styles with login.css for SAADA */
+@import "../login/login.css";
+
+.reg-form-area {
+    width: 48%; /* Slightly wider for registration grid */
+    padding: 3.5rem 4rem;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.branding-banner.reg-variant {
+    width: 52%;
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.select-wrap select {
+    width: 100%;
+    background: #f9fafb;
+    border: 2px solid #f3f4f6;
+    padding: 1.15rem 1.5rem 1.15rem 4rem;
+    border-radius: 20px;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.2s;
+    color: var(--text-dark);
+    appearance: none;
+}
+
+.select-wrap select:focus {
+    border-color: var(--primary-green);
+    background: white;
+}
+
+.select-wrap::after {
+    content: "▼";
+    position: absolute;
+    right: 1.5rem;
+    font-size: 0.7rem;
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+@media (max-width: 1024px) {
+    .reg-form-area {
+        width: 100%;
+        padding: 3rem 2rem 5rem;
+    }
+    .form-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
