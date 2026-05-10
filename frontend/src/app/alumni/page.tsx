@@ -40,29 +40,10 @@ export default function AlumniPage() {
         fetchStats();
     }, []);
 
-    // Sample Data for Search Results (Alumni Entities) with Fuzzy Match Scores
-    const results = [
-        { id: 1, name: "Ahmad Faisal", nis: "12345678", year: "2024", class: "9A", type: "Ijazah", status: "Lengkap", statusColor: "#15803d", statusBg: "#dcfce7", matchScore: 100 },
-        { id: 2, name: "Ahmad Syukri", nis: "12345679", year: "2023", class: "9B", type: "SKHU", status: "Lengkap", statusColor: "#15803d", statusBg: "#dcfce7", matchScore: 85 },
-        { id: 3, name: "Muhammad Faisal", nis: "12345680", year: "2024", class: "9C", type: "Rapor", status: "Belum Lengkap", statusColor: "#ca8a04", statusBg: "#fef9c3", matchScore: 72 },
-    ];
-
-    // Extended Sample Data for Latest Alumni (Default View)
-    const latestAlumniData = [
-        { name: "Siti Aminah", nis: "21001", year: "2023", class: "9A", type: "Ijazah", status: "Lengkap", statusBg: "#dcfce7", statusColor: "#15803d" },
-        { name: "Budi Santoso", nis: "21002", year: "2023", class: "9B", type: "SKHU", status: "Lengkap", statusBg: "#dcfce7", statusColor: "#15803d" },
-        { name: "Dewi Lestari", nis: "21003", year: "2022", class: "9A", type: "Transkrip", status: "Belum Lengkap", statusBg: "#ffedd5", statusColor: "#9a3412" },
-        { name: "Rizky Ramadhan", nis: "21004", year: "2024", class: "9C", type: "Rapor", status: "Lengkap", statusBg: "#dcfce7", statusColor: "#15803d" },
-        { name: "Doni Kurniawan", nis: "21005", year: "2021", class: "9B", type: "Ijazah", status: "Arsip Hilang", statusBg: "#fee2e2", statusColor: "#991b1b" },
-        { name: "Fajar Nugraha", nis: "21006", year: "2023", class: "9A", type: "SKHU", status: "Lengkap", statusBg: "#dcfce7", statusColor: "#15803d" },
-        { name: "Gita Pertiwi", nis: "21007", year: "2022", class: "9C", type: "Transkrip", status: "Belum Lengkap", statusBg: "#ffedd5", statusColor: "#9a3412" },
-        { name: "Hendra Wijaya", nis: "21008", year: "2024", class: "9B", type: "Rapor", status: "Lengkap", statusBg: "#dcfce7", statusColor: "#15803d" },
-        { name: "Indah Sari", nis: "21009", year: "2021", class: "9A", type: "Ijazah", status: "Arsip Hilang", statusBg: "#fee2e2", statusColor: "#991b1b" },
-        { name: "Joko Anwar", nis: "21010", year: "2023", class: "9B", type: "SKHU", status: "Lengkap", statusBg: "#dcfce7", statusColor: "#15803d" },
-        { name: "Kartika Putri", nis: "21011", year: "2022", class: "9C", type: "Transkrip", status: "Lengkap", statusBg: "#dcfce7", statusColor: "#15803d" },
-        { name: "Lukman Hakim", nis: "21012", year: "2024", class: "9A", type: "Rapor", status: "Belum Lengkap", statusBg: "#ffedd5", statusColor: "#9a3412" },
-        { name: "Muhammad Zaki", nis: "21013", year: "2023", class: "9B", type: "Buku Induk", status: "Lengkap", statusBg: "#dcfce7", statusColor: "#15803d" },
-    ];
+    const [results, setResults] = useState<any[]>([]);
+    const [latestAlumniData, setLatestAlumniData] = useState<any[]>([]);
+    const [isLoadingResults, setIsLoadingResults] = useState(false);
+    const [isLoadingLatest, setIsLoadingLatest] = useState(false);
 
     const totalPages = Math.ceil(latestAlumniData.length / itemsPerPage);
 
@@ -70,6 +51,32 @@ export default function AlumniPage() {
     const filteredData = selectedArchiveType
         ? latestAlumniData.filter(alumni => alumni.type === selectedArchiveType)
         : latestAlumniData;
+
+    useEffect(() => {
+        const fetchLatest = async () => {
+            setIsLoadingLatest(true);
+            try {
+                const { getBukuIndukList } = await import("../../../services/api");
+                const res = await getBukuIndukList(10); // Get latest 10
+                if (res.data) {
+                    const mapped = res.data.map((item: any) => ({
+                        id: item.alumniId || item.id,
+                        name: item.namaLengkap,
+                        nis: item.nis,
+                        year: item.tahunLulus,
+                        class: item.kelasMasuk || "-",
+                        type: "Buku Induk",
+                        status: item.statusArsip || "Lengkap",
+                        statusColor: item.statusArsip === 'Lengkap' ? "#15803d" : "#ca8a04",
+                        statusBg: item.statusArsip === 'Lengkap' ? "#dcfce7" : "#fef9c3",
+                    }));
+                    setLatestAlumniData(mapped);
+                }
+            } catch (err) { console.error(err); }
+            finally { setIsLoadingLatest(false); }
+        };
+        fetchLatest();
+    }, []);
 
     const totalFilteredPages = Math.ceil(filteredData.length / itemsPerPage);
     const currentData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -82,11 +89,30 @@ export default function AlumniPage() {
         if (currentPage < totalFilteredPages) setCurrentPage(currentPage + 1);
     };
 
-    const handleSearch = () => {
-        // In a real app, this would trigger an API call.
-        // For now, we simulate finding results whenever something is typed.
+    const handleSearch = async () => {
         if (searchTerm.trim() !== "") {
+            setIsLoadingResults(true);
             setHasSearched(true);
+            try {
+                const { searchAlumni } = await import("../../../services/api");
+                const res = await searchAlumni(searchTerm);
+                if (res.data) {
+                    const mapped = res.data.map((item: any) => ({
+                        id: item.id,
+                        name: item.namaLengkap,
+                        nis: item.nis,
+                        year: item.tahunLulus,
+                        class: item.kelasMasuk || "-",
+                        type: item.type || "Buku Induk",
+                        status: item.statusArsip || "Lengkap",
+                        statusColor: item.statusArsip === 'Lengkap' ? "#15803d" : "#ca8a04",
+                        statusBg: item.statusArsip === 'Lengkap' ? "#dcfce7" : "#fef9c3",
+                        matchScore: item.matchScore || 100
+                    }));
+                    setResults(mapped);
+                }
+            } catch (err) { console.error(err); }
+            finally { setIsLoadingResults(false); }
         }
     };
 
@@ -209,73 +235,77 @@ export default function AlumniPage() {
                                 <div style={{ width: "150px", textAlign: "right" }}>Aksi</div>
                             </div>
 
-                            {/* Data Rows */}
-                            {results.map((item) => (
-                                <div key={item.id} className="alumni-table-row">
-                                    <div style={{ flex: 1.5, fontWeight: "600", color: "var(--text-heading)" }} data-label="Nama Alumni">{item.name}</div>
-                                    <div style={{ flex: 1, color: "var(--text-body)" }} data-label="NIS">{item.nis}</div>
-                                    <div style={{ flex: 0.5, color: "var(--text-body)" }} data-label="Tahun Lulus">{item.year}</div>
-                                    <div style={{ flex: 1 }} data-label="Fuzzy Score">
-                                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", width: "100%", justifyContent: "flex-end" }}>
-                                            <div style={{ flex: 1, maxWidth: "100px", height: "6px", background: "#e5e7eb", borderRadius: "3px", overflow: "hidden" }}>
-                                                <div style={{
-                                                    width: `${item.matchScore}%`,
-                                                    height: "100%",
-                                                    background: item.matchScore > 80 ? "#22c55e" : item.matchScore > 60 ? "#f59e0b" : "#ef4444"
-                                                }}></div>
-                                            </div>
-                                            <span style={{ fontSize: "0.85rem", fontWeight: "700", color: item.matchScore > 80 ? "#15803d" : item.matchScore > 60 ? "#92400e" : "#b91c1c", minWidth: "40px" }}>
-                                                {item.matchScore}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div style={{ width: "150px" }} data-label="Status">
-                                        <span style={{
-                                            padding: "0.35rem 1rem",
-                                            borderRadius: "6px",
-                                            background: item.statusBg,
-                                            color: item.statusColor,
-                                            fontSize: "0.85rem",
-                                            fontWeight: "600",
-                                            minWidth: "120px",
-                                            textAlign: "center",
-                                            display: "inline-block"
-                                        }}>
-                                            {item.status}
-                                        </span>
-                                    </div>
-                                    <div style={{ width: "150px", textAlign: "right", display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
-                                        <Link href={`/alumni/${item.id + 10}`} style={{ textDecoration: "none" }} title="Lihat">
-                                            <span style={{
-                                                background: "none",
-                                                border: "1px solid #e5e7eb",
-                                                padding: "0.4rem",
-                                                borderRadius: "6px",
-                                                cursor: "pointer",
-                                                color: "#4b5563",
-                                                display: "flex",
-                                                alignItems: "center"
-                                            }}>
-                                                <Eye size={16} />
-                                            </span>
-                                        </Link>
-                                        <button 
-                                            style={{ border: "1px solid #e5e7eb", background: "white", padding: "0.4rem", borderRadius: "6px", cursor: "pointer", color: "#2563eb" }}
-                                            onClick={() => alert("Fitur Edit sedang disiapkan.")}
-                                            title="Edit"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button 
-                                            style={{ border: "1px solid #fee2e2", background: "white", padding: "0.4rem", borderRadius: "6px", cursor: "pointer", color: "#dc2626" }}
-                                            onClick={() => alert("Fitur Hapus sedang disiapkan.")}
-                                            title="Hapus"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                             {/* Data Rows */}
+                             {isLoadingResults ? (
+                                 <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>Mencari data alumni...</div>
+                             ) : results.length === 0 ? (
+                                 <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>Data tidak ditemukan untuk kata kunci "{searchTerm}"</div>
+                             ) : results.map((item) => (
+                                 <div key={item.id} className="alumni-table-row">
+                                     <div style={{ flex: 1.5, fontWeight: "600", color: "var(--text-heading)" }} data-label="Nama Alumni">{item.name}</div>
+                                     <div style={{ flex: 1, color: "var(--text-body)" }} data-label="NIS">{item.nis}</div>
+                                     <div style={{ flex: 0.5, color: "var(--text-body)" }} data-label="Tahun Lulus">{item.year}</div>
+                                     <div style={{ flex: 1 }} data-label="Fuzzy Score">
+                                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", width: "100%", justifyContent: "flex-end" }}>
+                                             <div style={{ flex: 1, maxWidth: "100px", height: "6px", background: "#e5e7eb", borderRadius: "3px", overflow: "hidden" }}>
+                                                 <div style={{
+                                                     width: `${item.matchScore}%`,
+                                                     height: "100%",
+                                                     background: item.matchScore > 80 ? "#22c55e" : item.matchScore > 60 ? "#f59e0b" : "#ef4444"
+                                                 }}></div>
+                                             </div>
+                                             <span style={{ fontSize: "0.85rem", fontWeight: "700", color: item.matchScore > 80 ? "#15803d" : item.matchScore > 60 ? "#92400e" : "#b91c1c", minWidth: "40px" }}>
+                                                 {item.matchScore}%
+                                             </span>
+                                         </div>
+                                     </div>
+                                     <div style={{ width: "150px" }} data-label="Status">
+                                         <span style={{
+                                             padding: "0.35rem 1rem",
+                                             borderRadius: "6px",
+                                             background: item.statusBg,
+                                             color: item.statusColor,
+                                             fontSize: "0.85rem",
+                                             fontWeight: "600",
+                                             minWidth: "120px",
+                                             textAlign: "center",
+                                             display: "inline-block"
+                                         }}>
+                                             {item.status}
+                                         </span>
+                                     </div>
+                                     <div style={{ width: "150px", textAlign: "right", display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+                                         <Link href={`/alumni/${item.id}`} style={{ textDecoration: "none" }} title="Lihat">
+                                             <span style={{
+                                                 background: "none",
+                                                 border: "1px solid #e5e7eb",
+                                                 padding: "0.4rem",
+                                                 borderRadius: "6px",
+                                                 cursor: "pointer",
+                                                 color: "#4b5563",
+                                                 display: "flex",
+                                                 alignItems: "center"
+                                             }}>
+                                                 <Eye size={16} />
+                                             </span>
+                                         </Link>
+                                         <button 
+                                             style={{ border: "1px solid #e5e7eb", background: "white", padding: "0.4rem", borderRadius: "6px", cursor: "pointer", color: "#2563eb" }}
+                                             onClick={() => alert("Fitur Edit sedang disiapkan.")}
+                                             title="Edit"
+                                         >
+                                             <Edit2 size={16} />
+                                         </button>
+                                         <button 
+                                             style={{ border: "1px solid #fee2e2", background: "white", padding: "0.4rem", borderRadius: "6px", cursor: "pointer", color: "#dc2626" }}
+                                             onClick={() => alert("Fitur Hapus sedang disiapkan.")}
+                                             title="Hapus"
+                                         >
+                                             <Trash2 size={16} />
+                                         </button>
+                                     </div>
+                                 </div>
+                             ))}
                         </div>
 
                         {/* Pagination */}
@@ -383,62 +413,66 @@ export default function AlumniPage() {
                                     <div style={{ width: "150px", textAlign: "right" }}>Aksi</div>
                                 </div>
 
-                                {/* Data Rows (Styled like Cards) */}
-                                <div>
-                                    {currentData.map((item, index) => (
-                                        <div key={index} className="alumni-table-row">
-                                            <div style={{ flex: 1.5, fontWeight: "600", color: "var(--text-heading)" }} data-label="Nama Alumni">{item.name}</div>
-                                            <div style={{ flex: 1, color: "var(--text-body)" }} data-label="NIS">{item.nis}</div>
-                                            <div style={{ flex: 0.5, color: "var(--text-body)" }} data-label="Kelas">{item.class}</div>
-                                            <div style={{ flex: 0.5, color: "var(--text-body)" }} data-label="Tahun Lulus">{item.year}</div>
-                                            <div style={{ flex: 1, color: "var(--text-body)" }} data-label="Jenis Arsip">{item.type}</div>
-                                            <div style={{ width: "150px" }} data-label="Status">
-                                                <span style={{
-                                                    padding: "0.3rem 0.8rem",
-                                                    borderRadius: "6px",
-                                                    background: item.statusBg,
-                                                    color: item.statusColor,
-                                                    fontSize: "0.85rem",
-                                                    fontWeight: "600",
-                                                    display: "inline-block",
-                                                    textAlign: "center"
-                                                }}>
-                                                    {item.status}
-                                                </span>
-                                            </div>
-                                            <div style={{ width: "150px", textAlign: "right", display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
-                                                <Link href={`/alumni/${index + 10}`} style={{ textDecoration: "none" }} title="Lihat">
-                                                    <span style={{
-                                                        background: "none",
-                                                        border: "1px solid #e5e7eb",
-                                                        padding: "0.4rem",
-                                                        borderRadius: "6px",
-                                                        cursor: "pointer",
-                                                        color: "#4b5563",
-                                                        display: "flex",
-                                                        alignItems: "center"
-                                                    }}>
-                                                        <Eye size={16} />
-                                                    </span>
-                                                </Link>
-                                                <button 
-                                                    style={{ border: "1px solid #e5e7eb", background: "white", padding: "0.4rem", borderRadius: "6px", cursor: "pointer", color: "#2563eb" }}
-                                                    onClick={() => alert("Fitur Edit sedang disiapkan.")}
-                                                    title="Edit"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button 
-                                                    style={{ border: "1px solid #fee2e2", background: "white", padding: "0.4rem", borderRadius: "6px", cursor: "pointer", color: "#dc2626" }}
-                                                    onClick={() => alert("Fitur Hapus sedang disiapkan.")}
-                                                    title="Hapus"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                 {/* Data Rows (Styled like Cards) */}
+                                 <div>
+                                     {isLoadingLatest ? (
+                                         <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>Memuat data terbaru...</div>
+                                     ) : currentData.length === 0 ? (
+                                         <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>Belum ada data alumni.</div>
+                                     ) : currentData.map((item, index) => (
+                                         <div key={index} className="alumni-table-row">
+                                             <div style={{ flex: 1.5, fontWeight: "600", color: "var(--text-heading)" }} data-label="Nama Alumni">{item.name}</div>
+                                             <div style={{ flex: 1, color: "var(--text-body)" }} data-label="NIS">{item.nis}</div>
+                                             <div style={{ flex: 0.5, color: "var(--text-body)" }} data-label="Kelas">{item.class}</div>
+                                             <div style={{ flex: 0.5, color: "var(--text-body)" }} data-label="Tahun Lulus">{item.year}</div>
+                                             <div style={{ flex: 1, color: "var(--text-body)" }} data-label="Jenis Arsip">{item.type}</div>
+                                             <div style={{ width: "150px" }} data-label="Status">
+                                                 <span style={{
+                                                     padding: "0.3rem 0.8rem",
+                                                     borderRadius: "6px",
+                                                     background: item.statusBg,
+                                                     color: item.statusColor,
+                                                     fontSize: "0.85rem",
+                                                     fontWeight: "600",
+                                                     display: "inline-block",
+                                                     textAlign: "center"
+                                                 }}>
+                                                     {item.status}
+                                                 </span>
+                                             </div>
+                                             <div style={{ width: "150px", textAlign: "right", display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+                                                 <Link href={`/alumni/${item.id}`} style={{ textDecoration: "none" }} title="Lihat">
+                                                     <span style={{
+                                                         background: "none",
+                                                         border: "1px solid #e5e7eb",
+                                                         padding: "0.4rem",
+                                                         borderRadius: "6px",
+                                                         cursor: "pointer",
+                                                         color: "#4b5563",
+                                                         display: "flex",
+                                                         alignItems: "center"
+                                                     }}>
+                                                         <Eye size={16} />
+                                                     </span>
+                                                 </Link>
+                                                 <button 
+                                                     style={{ border: "1px solid #e5e7eb", background: "white", padding: "0.4rem", borderRadius: "6px", cursor: "pointer", color: "#2563eb" }}
+                                                     onClick={() => alert("Fitur Edit sedang disiapkan.")}
+                                                     title="Edit"
+                                                 >
+                                                     <Edit2 size={16} />
+                                                 </button>
+                                                 <button 
+                                                     style={{ border: "1px solid #fee2e2", background: "white", padding: "0.4rem", borderRadius: "6px", cursor: "pointer", color: "#dc2626" }}
+                                                     onClick={() => alert("Fitur Hapus sedang disiapkan.")}
+                                                     title="Hapus"
+                                                 >
+                                                     <Trash2 size={16} />
+                                                 </button>
+                                             </div>
+                                         </div>
+                                     ))}
+                                 </div>
 
                                 {/* Pagination Controls for Data Alumni Terbaru */}
                                 <div style={{ padding: "1rem 1.5rem", background: "#f9fafb", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e5e7eb" }}>

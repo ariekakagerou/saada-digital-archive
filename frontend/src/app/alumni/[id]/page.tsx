@@ -53,22 +53,23 @@ export default function DetailArchivePage() {
 
                         // Map C# backend DTO format to Frontend format for the UI
                         setAlumni({
+                            ...db, // Spread all database fields
                             id: db.id,
                             name: db.namaLengkap,
                             nis: db.nis,
                             nisn: db.nisn,
                             tempatLahir: db.tempatLahir,
                             tanggalLahir: db.tanggalLahir,
-                            namaMadrasah: db.dataMasuk?.asalSekolah || "MTs Assa'adah Sukaraja Bogor",
+                            namaMadrasah: db.asalSekolah || "MTs Assa'adah Sukaraja Bogor",
                             year: db.tahunLulus || "2024",
-                            class: db.dataMasuk?.kelasAwal || "9A",
+                            class: db.kelasMasuk || "9A",
                             type: targetArsip ? targetArsip.jenisDokumen : "Buku Induk",
                             nomorIjazah: db.nomorIjazah || "-",
                             nomorSKHU: db.nomorSkhun || "-",
-                            // Dummy data for missing properties
-                            status: "Lengkap",
-                            statusColor: "#15803d",
-                            statusBg: "#dcfce7"
+                            // Meta for UI
+                            status: db.statusArsip || "Lengkap",
+                            statusColor: db.statusArsip === 'Lengkap' ? "#15803d" : "#92400e",
+                            statusBg: db.statusArsip === 'Lengkap' ? "#dcfce7" : "#fef3c7"
                         });
                     }
                 })
@@ -444,58 +445,56 @@ export default function DetailArchivePage() {
                             {/* Buku Induk Specific Fields */}
                             {alumni.type === 'Buku Induk' && (
                                 <>
-                                    {alumni.nomorHalaman && (
-                                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Nomor Halaman</div>
-                                            <div style={{ fontWeight: "600", color: "var(--text-heading)" }}>{alumni.nomorHalaman}</div>
+                                    {/* ── 1. IDENTITAS SISWA ── */}
+                                    <div className="detail-section">
+                                        <div className="section-divider"><span>IDENTITAS SISWA</span></div>
+                                        <div className="detail-grid-modern">
+                                            <div className="dg-item"><span>Agama</span><strong>{alumni.agama || 'Islam'}</strong></div>
+                                            <div className="dg-item"><span>Kewarganegaraan</span><strong>{alumni.kewarganegaraan || 'WNI'}</strong></div>
+                                            <div className="dg-item"><span>Jenis Kelamin</span><strong>{alumni.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</strong></div>
+                                            <div className="dg-item"><span>Alamat Siswa</span><strong>{alumni.alamatSekarang || '-'}</strong></div>
                                         </div>
-                                    )}
-                                    {alumni.nomorUrut && (
-                                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Nomor Urut</div>
-                                            <div style={{ fontWeight: "600", color: "var(--text-heading)" }}>{alumni.nomorUrut}</div>
+                                    </div>
+
+                                    {/* ── 2. DATA KELUARGA ── */}
+                                    <div className="detail-section">
+                                        <div className="section-divider"><span>ORANG TUA / WALI</span></div>
+                                        <div className="detail-grid-modern">
+                                            <div className="dg-item"><span>Nama Ayah</span><strong>{alumni.namaAyah || '-'}</strong></div>
+                                            <div className="dg-item"><span>Pekerjaan Ayah</span><strong>{alumni.pekerjaanAyah || '-'}</strong></div>
+                                            <div className="dg-item"><span>Pendidikan Ayah</span><strong>{alumni.pendidikanAyah || '-'}</strong></div>
+                                            <div className="dg-item"><span>Nama Ibu</span><strong>{alumni.namaIbu || '-'}</strong></div>
+                                            <div className="dg-item"><span>Pekerjaan Ibu</span><strong>{alumni.pekerjaanIbu || '-'}</strong></div>
+                                            <div className="dg-item"><span>Pendidikan Ibu</span><strong>{alumni.pendidikanIbu || '-'}</strong></div>
+                                            <div className="dg-item full-width"><span>Alamat Orang Tua</span><strong>{alumni.alamatOrangTua || '-'}</strong></div>
+                                            <div className="dg-item"><span>No. HP Wali</span><strong>{alumni.noHpWali || '-'}</strong></div>
                                         </div>
-                                    )}
-                                    {alumni.namaAyah && (
-                                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Nama Ayah</div>
-                                            <div style={{ fontWeight: "500", color: "var(--text-heading)" }}>{alumni.namaAyah}</div>
+                                    </div>
+
+                                    {/* ── 3. DATA SEKOLAH & KELULUSAN ── */}
+                                    <div className="detail-section">
+                                        <div className="section-divider"><span>RIWAYAT SEKOLAH</span></div>
+                                        <div className="detail-grid-modern">
+                                            <div className="dg-item"><span>Tahun Masuk</span><strong>{alumni.tahunMasuk || '-'}</strong></div>
+                                            <div className="dg-item"><span>Asal Sekolah</span><strong>{alumni.asalSekolah || '-'}</strong></div>
+                                            <div className="dg-item"><span>Kelas Masuk</span><strong>{alumni.kelasMasuk || '-'}</strong></div>
+                                            <div className="dg-item"><span>Tahun Lulus</span><strong>{alumni.tahunLulus || '-'}</strong></div>
+                                            <div className="dg-item"><span>No. Ijazah</span><strong>{alumni.nomorIjazah || '-'}</strong></div>
+                                            <div className="dg-item"><span>No. SKHUN</span><strong>{alumni.nomorSkhun || '-'}</strong></div>
+                                            <div className="dg-item"><span>Status Lulus</span><strong>{alumni.statusKelulusan || 'Lulus'}</strong></div>
                                         </div>
-                                    )}
-                                    {alumni.namaIbu && (
-                                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Nama Ibu</div>
-                                            <div style={{ fontWeight: "500", color: "var(--text-heading)" }}>{alumni.namaIbu}</div>
-                                        </div>
-                                    )}
-                                    {alumni.pekerjaanAyah && (
-                                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Pekerjaan Ayah</div>
-                                            <div style={{ fontWeight: "500", color: "var(--text-heading)" }}>{alumni.pekerjaanAyah}</div>
-                                        </div>
-                                    )}
-                                    {alumni.pekerjaanIbu && (
-                                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Pekerjaan Ibu</div>
-                                            <div style={{ fontWeight: "500", color: "var(--text-heading)" }}>{alumni.pekerjaanIbu}</div>
-                                        </div>
-                                    )}
-                                    {alumni.alamat && (
-                                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Alamat</div>
-                                            <div style={{ fontWeight: "500", color: "var(--text-heading)" }}>{alumni.alamat}</div>
-                                        </div>
-                                    )}
-                                    {alumni.nomorIjazah && (
-                                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Nomor Ijazah</div>
-                                            <div style={{ fontWeight: "600", color: "var(--text-heading)" }}>{alumni.nomorIjazah}</div>
-                                        </div>
-                                    )}
-                                    {alumni.tanggalPencatatan && (
-                                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Tanggal Pencatatan</div>
-                                            <div style={{ fontWeight: "500", color: "var(--text-heading)" }}>{alumni.tanggalPencatatan}</div>
+                                    </div>
+
+                                    {/* ── 4. DATA ALUMNI (TRACER STUDY) ── */}
+                                    {(alumni.emailAlumni || alumni.pekerjaanSekarang || alumni.perguruanTinggi) && (
+                                        <div className="detail-section">
+                                            <div className="section-divider"><span>TRACER STUDY (PASCA LULUS)</span></div>
+                                            <div className="detail-grid-modern">
+                                                <div className="dg-item"><span>Email</span><strong>{alumni.emailAlumni || '-'}</strong></div>
+                                                <div className="dg-item"><span>No. HP Alumni</span><strong>{alumni.nomorHpAlumni || '-'}</strong></div>
+                                                <div className="dg-item"><span>Pekerjaan</span><strong>{alumni.pekerjaanSekarang || '-'}</strong></div>
+                                                <div className="dg-item"><span>Perguruan Tinggi</span><strong>{alumni.perguruanTinggi || '-'}</strong></div>
+                                            </div>
                                         </div>
                                     )}
                                 </>
@@ -1248,6 +1247,23 @@ export default function DetailArchivePage() {
                     .alumni-detail-header {
                         flex-direction: column !important;
                     }
+                }
+            `}</style>
+            <style jsx>{`
+                .dg-item { display: flex; flex-direction: column; gap: 0.25rem; }
+                .dg-item span { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.025em; }
+                .dg-item strong { font-size: 0.95rem; color: #1e293b; font-weight: 600; }
+                .dg-item.full-width { grid-column: 1 / -1; }
+                
+                .detail-grid-modern { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+                .detail-section { margin-bottom: 2rem; }
+                
+                .section-divider { display: flex; align-items: center; margin-bottom: 1.25rem; }
+                .section-divider::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; margin-left: 1rem; }
+                .section-divider span { font-size: 0.8rem; font-weight: 800; color: #15803d; letter-spacing: 0.05em; }
+
+                @media (max-width: 640px) {
+                    .detail-grid-modern { grid-template-columns: 1fr; }
                 }
             `}</style>
         </AdminLayout>

@@ -43,8 +43,13 @@ export default function BukuIndukPage() {
 
     const [formData, setFormData] = useState<any>({
         nis: "", nisn: "", namaLengkap: "", jenisKelamin: "L", tempatLahir: "",
-        tanggalLahir: "", agama: "Islam", tahunMasuk: "", tahunLulus: "",
-        statusKelulusan: "Lulus", statusArsip: "Belum Lengkap"
+        tanggalLahir: "", agama: "Islam", kewarganegaraan: "WNI",
+        namaAyah: "", namaIbu: "", pekerjaanAyah: "", pekerjaanIbu: "",
+        pendidikanAyah: "", pendidikanIbu: "", alamatOrangTua: "", noHpWali: "",
+        tahunMasuk: "", asalSekolah: "", kelasMasuk: "", jurusan: "-",
+        tahunLulus: "", nomorIjazah: "", nomorSkhun: "", statusKelulusan: "Lulus",
+        emailAlumni: "", nomorHpAlumni: "", pekerjaanSekarang: "", perguruanTinggi: "", alamatSekarang: "",
+        statusArsip: "Belum Lengkap"
     });
 
     const fetchRecords = async () => {
@@ -63,7 +68,16 @@ export default function BukuIndukPage() {
         try {
             await api.createBukuInduk(formData);
             setIsAdding(false);
-            setFormData({ nis: "", nisn: "", namaLengkap: "", jenisKelamin: "L", tempatLahir: "", tanggalLahir: "", agama: "Islam", tahunMasuk: "", tahunLulus: "", statusKelulusan: "Lulus", statusArsip: "Belum Lengkap" });
+            setFormData({
+                nis: "", nisn: "", namaLengkap: "", jenisKelamin: "L", tempatLahir: "",
+                tanggalLahir: "", agama: "Islam", kewarganegaraan: "WNI",
+                namaAyah: "", namaIbu: "", pekerjaanAyah: "", pekerjaanIbu: "",
+                pendidikanAyah: "", pendidikanIbu: "", alamatOrangTua: "", noHpWali: "",
+                tahunMasuk: "", asalSekolah: "", kelasMasuk: "", jurusan: "-",
+                tahunLulus: "", nomorIjazah: "", nomorSkhun: "", statusKelulusan: "Lulus",
+                emailAlumni: "", nomorHpAlumni: "", pekerjaanSekarang: "", perguruanTinggi: "", alamatSekarang: "",
+                statusArsip: "Belum Lengkap"
+            });
             fetchRecords();
         } catch (err: any) { alert(err.message); }
     };
@@ -278,7 +292,10 @@ export default function BukuIndukPage() {
                                 <tr>
                                     <th>NIS / NISN</th>
                                     <th>Nama Alumni</th>
-                                    <th>Tahun Lulus</th>
+                                    <th>JK</th>
+                                    <th>Thn Masuk</th>
+                                    <th>Thn Lulus</th>
+                                    <th>Status Lulus</th>
                                     <th>Status Arsip</th>
                                     {smartMode && <th>Kemiripan</th>}
                                     <th style={{ textAlign: "right" }}>Opsi Kelola</th>
@@ -286,7 +303,7 @@ export default function BukuIndukPage() {
                             </thead>
                             <tbody>
                                 {isLoading ? (
-                                    <tr><td colSpan={5} className="empty-state"><Loader2 className="animate-spin" /> Memasukkan data...</td></tr>
+                                    <tr><td colSpan={8} className="empty-state"><Loader2 className="animate-spin" /> Memasukkan data...</td></tr>
                                 ) : filteredResults.length > 0 ? (
                                     filteredResults.map(item => (
                                         <tr key={item.id} className="row-hover">
@@ -298,11 +315,19 @@ export default function BukuIndukPage() {
                                             </td>
                                             <td>
                                                 <div className="name-cell">
-                                                    <div className="avatar-sm">{item.jenisKelamin === 'L' ? '👦' : '👧'}</div>
                                                     <strong>{item.namaLengkap}</strong>
                                                 </div>
                                             </td>
+                                            <td>
+                                                <span className="jk-badge">{item.jenisKelamin}</span>
+                                            </td>
+                                            <td>{item.tahunMasuk}</td>
                                             <td>{item.tahunLulus}</td>
+                                            <td>
+                                                <span className={`pill-small ${item.statusKelulusan === 'Lulus' ? 'ps-success' : 'ps-other'}`}>
+                                                    {item.statusKelulusan}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <span className={`pill ${item.statusArsip === 'Lengkap' ? 'pill-success' : 'pill-warning'}`}>
                                                     {item.statusArsip === 'Lengkap' ? '✅ Lengkap' : '⚠️ Cek Ulang'}
@@ -331,7 +356,7 @@ export default function BukuIndukPage() {
                                         </tr>
                                     ))
                                 ) : (
-                                    <tr><td colSpan={5} className="empty-state">Data tidak ditemukan.</td></tr>
+                                    <tr><td colSpan={8} className="empty-state">Data tidak ditemukan.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -345,9 +370,13 @@ export default function BukuIndukPage() {
                             filteredResults.map(item => (
                                 <Link href={`/alumni/${item.alumniId || item.id}`} key={item.id} className="m-premium-card" style={{ textDecoration: 'none', display: 'block' }}>
                                     <div className="m-card-header">
-                                        <div className="avatar-md">{item.jenisKelamin === 'L' ? '👦' : '👧'}</div>
                                         <div className="m-card-main-info">
-                                            <div className="m-tag">{item.tahunLulus}</div>
+                                            <div className="m-tag-row">
+                                                <div className="m-tag">{item.tahunLulus}</div>
+                                                <div className={`m-tag-jk ${item.jenisKelamin === 'L' ? 'l' : 'p'}`}>
+                                                    {item.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                                                </div>
+                                            </div>
                                             <h4>{item.namaLengkap}</h4>
                                             <div className="m-sub-info">
                                                 <span>NIS: {item.nis}</span>
@@ -400,41 +429,108 @@ export default function BukuIndukPage() {
                             <button className="btn-close" onClick={() => { setIsAdding(false); setEditingRecord(null); }}><X /></button>
                         </div>
                         <form className="premium-form" onSubmit={isAdding ? handleCreate : handleUpdate}>
+                            <div className="section-divider"><span>1. IDENTITAS SISWA</span></div>
                             <div className="form-row">
                                 <div className="input-group">
-                                    <label>Nomor Induk Siswa (NIS)</label>
-                                    <input type="text" value={formData.nis} onChange={e => setFormData({ ...formData, nis: e.target.value })} placeholder="Contoh: 12101" required />
+                                    <label>Nama Lengkap</label>
+                                    <input type="text" value={formData.namaLengkap} onChange={(e) => setFormData({ ...formData, namaLengkap: e.target.value })} required />
                                 </div>
-                                <div className="input-group">
-                                    <label>NISN</label>
-                                    <input type="text" value={formData.nisn} onChange={e => setFormData({ ...formData, nisn: e.target.value })} placeholder="Contoh: 005432..." required />
-                                </div>
-                            </div>
-                            <div className="input-group full">
-                                <label>Nama Lengkap Siswa</label>
-                                <input type="text" value={formData.namaLengkap} onChange={e => setFormData({ ...formData, namaLengkap: e.target.value })} placeholder="Masukkan nama sesuai ijazah" required />
-                            </div>
-                            <div className="form-row">
                                 <div className="input-group">
                                     <label>Jenis Kelamin</label>
-                                    <select value={formData.jenisKelamin} onChange={e => setFormData({ ...formData, jenisKelamin: e.target.value })}>
+                                    <select value={formData.jenisKelamin} onChange={(e) => setFormData({ ...formData, jenisKelamin: e.target.value })}>
                                         <option value="L">Laki-laki</option>
                                         <option value="P">Perempuan</option>
                                     </select>
                                 </div>
+                            </div>
+                            <div className="form-row">
                                 <div className="input-group">
-                                    <label>Tahun Lulus</label>
-                                    <input type="text" value={formData.tahunLulus} onChange={e => setFormData({ ...formData, tahunLulus: e.target.value })} placeholder="Tahun" />
+                                    <label>NIS</label>
+                                    <input type="text" value={formData.nis} onChange={(e) => setFormData({ ...formData, nis: e.target.value })} required />
+                                </div>
+                                <div className="input-group">
+                                    <label>NISN</label>
+                                    <input type="text" value={formData.nisn} onChange={(e) => setFormData({ ...formData, nisn: e.target.value })} required />
                                 </div>
                             </div>
                             <div className="form-row">
                                 <div className="input-group">
-                                    <label>Status Berkas</label>
-                                    <select value={formData.statusArsip} onChange={e => setFormData({ ...formData, statusArsip: e.target.value })}>
-                                        <option value="Lengkap">Lengkap (Terverifikasi)</option>
-                                        <option value="Belum Lengkap">Belum Lengkap / Perlu Cek</option>
+                                    <label>Tempat Lahir</label>
+                                    <input type="text" value={formData.tempatLahir} onChange={(e) => setFormData({ ...formData, tempatLahir: e.target.value })} />
+                                </div>
+                                <div className="input-group">
+                                    <label>Tanggal Lahir</label>
+                                    <input type="text" value={formData.tanggalLahir} onChange={(e) => setFormData({ ...formData, tanggalLahir: e.target.value })} placeholder="Contoh: 12-05-2005" />
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="input-group">
+                                    <label>Agama</label>
+                                    <input type="text" value={formData.agama} onChange={(e) => setFormData({ ...formData, agama: e.target.value })} />
+                                </div>
+                                <div className="input-group">
+                                    <label>Kewarganegaraan</label>
+                                    <input type="text" value={formData.kewarganegaraan} onChange={(e) => setFormData({ ...formData, kewarganegaraan: e.target.value })} />
+                                </div>
+                            </div>
+
+                            <div className="section-divider"><span>2. DATA KELUARGA</span></div>
+                            <div className="form-row">
+                                <div className="input-group">
+                                    <label>Nama Ayah</label>
+                                    <input type="text" value={formData.namaAyah} onChange={(e) => setFormData({ ...formData, namaAyah: e.target.value })} />
+                                </div>
+                                <div className="input-group">
+                                    <label>Nama Ibu</label>
+                                    <input type="text" value={formData.namaIbu} onChange={(e) => setFormData({ ...formData, namaIbu: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="input-group">
+                                    <label>Pekerjaan Ayah</label>
+                                    <input type="text" value={formData.pekerjaanAyah} onChange={(e) => setFormData({ ...formData, pekerjaanAyah: e.target.value })} />
+                                </div>
+                                <div className="input-group">
+                                    <label>Pekerjaan Ibu</label>
+                                    <input type="text" value={formData.pekerjaanIbu} onChange={(e) => setFormData({ ...formData, pekerjaanIbu: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="input-group">
+                                <label>Alamat Orang Tua</label>
+                                <input type="text" value={formData.alamatOrangTua} onChange={(e) => setFormData({ ...formData, alamatOrangTua: e.target.value })} />
+                            </div>
+
+                            <div className="section-divider"><span>3. PENDIDIKAN & KELULUSAN</span></div>
+                            <div className="form-row">
+                                <div className="input-group">
+                                    <label>Tahun Masuk</label>
+                                    <input type="text" value={formData.tahunMasuk} onChange={(e) => setFormData({ ...formData, tahunMasuk: e.target.value })} />
+                                </div>
+                                <div className="input-group">
+                                    <label>Tahun Lulus</label>
+                                    <input type="text" value={formData.tahunLulus} onChange={(e) => setFormData({ ...formData, tahunLulus: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="input-group">
+                                    <label>Nomor Ijazah</label>
+                                    <input type="text" value={formData.nomorIjazah} onChange={(e) => setFormData({ ...formData, nomorIjazah: e.target.value })} />
+                                </div>
+                                <div className="input-group">
+                                    <label>Status Kelulusan</label>
+                                    <select value={formData.statusKelulusan} onChange={(e) => setFormData({ ...formData, statusKelulusan: e.target.value })}>
+                                        <option value="Lulus">Lulus</option>
+                                        <option value="Pindah">Pindah</option>
+                                        <option value="DO">Drop Out</option>
                                     </select>
                                 </div>
+                            </div>
+                            <div className="input-group">
+                                <label>Status Arsip</label>
+                                <select value={formData.statusArsip} onChange={(e) => setFormData({ ...formData, statusArsip: e.target.value })}>
+                                    <option value="Lengkap">Lengkap</option>
+                                    <option value="Belum Lengkap">Belum Lengkap</option>
+                                </select>
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn-cancel" onClick={() => { setIsAdding(false); setEditingRecord(null); }}>Batal</button>
@@ -499,9 +595,12 @@ export default function BukuIndukPage() {
                 .row-hover:hover { background: rgba(21, 128, 61, 0.02); }
 
                 .nis-cell { display: flex; flex-direction: column; }
-                .nis-cell span { font-size: 0.75rem; color: var(--text-muted); }
-                .name-cell { display: flex; align-items: center; gap: 1rem; }
-                .avatar-sm { width: 32px; height: 32px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+                .nis-cell span { font-size: 0.7rem; color: var(--text-muted); }
+                .pill-small { padding: 0.3rem 0.6rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+                .ps-success { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+                .ps-other { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+                .name-cell { display: flex; align-items: center; gap: 0.5rem; }
+                .jk-badge { padding: 0.25rem 0.75rem; background: #f1f5f9; border-radius: 8px; font-weight: 700; color: #475569; font-size: 0.85rem; border: 1px solid #e2e8f0; }
 
                 .pill { padding: 0.5rem 1rem; border-radius: 30px; font-size: 0.8rem; font-weight: 750; display: inline-block; }
                 .pill-success { background: #dcfce7; color: #15803d; }
@@ -538,7 +637,14 @@ export default function BukuIndukPage() {
 
                 /* MODAL SYSTEM */
                 .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1.5rem; }
-                .modal-card { background: white; width: 100%; border-radius: 28px; padding: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+                
+                /* SECTION DIVIDER */
+                .section-divider { display: flex; align-items: center; margin: 1.5rem 0 1rem; }
+                .section-divider::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; margin-left: 1rem; }
+                .section-divider span { font-size: 0.75rem; font-weight: 800; color: #15803d; letter-spacing: 0.05em; }
+
+                .modal-card { background: white; width: 100%; max-width: 800px; border-radius: 28px; padding: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-height: 90vh; overflow-y: auto; }
+                
                 .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
                 .modal-header h2 { font-size: 1.8rem; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
                 .modal-header p { color: var(--text-muted); margin: 0.25rem 0 0 0; font-size: 0.95rem; }
@@ -547,7 +653,7 @@ export default function BukuIndukPage() {
                 .premium-form { display: flex; flex-direction: column; gap: 1.5rem; }
                 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
                 .input-group label { display: block; font-size: 0.85rem; font-weight: 750; color: #475569; margin-bottom: 0.5rem; }
-                .input-group input, .input-group select { width: 100%; padding: 0.9rem 1.25rem; border-radius: 14px; border: 2px solid #f1f5f9; outline: none; transition: border-color 0.2s; font-size: 1rem; font-weight: 500; }
+                .input-group input, .input-group select { width: 100%; padding: 0.9rem 1.25rem; border-radius: 14px; border: 2px solid #f1f5f9; outline: none; transition: border-color: 0.2s; font-size: 1rem; font-weight: 500; }
                 .input-group input:focus { border-color: var(--primary); }
                 
                 .modal-footer { margin-top: 1rem; display: flex; justify-content: flex-end; gap: 1rem; }
@@ -627,10 +733,12 @@ export default function BukuIndukPage() {
                     .m-premium-card:active { transform: scale(0.98); background: #f8fafc; }
                     
                     .m-card-header { display: flex; align-items: flex-start; gap: 1rem; }
-                    .avatar-md { width: 48px; height: 48px; min-width: 48px; background: #f1f5f9; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-                    
                     .m-card-main-info { flex: 1; }
-                    .m-tag { display: inline-block; font-size: 0.65rem; font-weight: 800; background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 6px; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .m-tag-row { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; }
+                    .m-tag { display: inline-block; font-size: 0.65rem; font-weight: 800; background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .m-tag-jk { display: inline-block; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; }
+                    .m-tag-jk.l { background: #eff6ff; color: #2563eb; }
+                    .m-tag-jk.p { background: #fdf2f8; color: #db2777; }
                     .m-card-main-info h4 { margin: 0; font-size: 1.05rem; font-weight: 800; color: #1e293b; line-height: 1.3; }
                     
                     .m-sub-info { margin-top: 0.25rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #94a3b8; font-weight: 600; }

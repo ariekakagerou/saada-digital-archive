@@ -215,67 +215,74 @@ function SKHUContent({ alumni }: { alumni: any }) {
 
 // Buku Induk Content Component
 function BukuIndukContent({ alumni }: { alumni: any }) {
+    // Helper to format date if it contains time
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return "................";
+        return dateStr.split('T')[0];
+    };
+
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem" }}>
-            {alumni.nomorHalaman && (
-                <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
-                    <div>Nomor Halaman</div>
-                    <div>: <strong>{alumni.nomorHalaman}</strong></div>
-                </div>
-            )}
-            <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
-                <div>Nama Lengkap</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.8rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <div style={{ fontWeight: "700", borderBottom: "1px solid #000" }}>KETERANGAN TENTANG DIRI SISWA</div>
+                <div style={{ fontSize: "0.7rem", color: "#666" }}>Hal: {alumni.nomorHalaman || "..."}</div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>1. Nama Lengkap</div>
                 <div>: <strong>{alumni.name}</strong></div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
-                <div>NIS / NISN</div>
-                <div>: {alumni.nis} / {alumni.nisn}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>2. Nomor Induk / NISN</div>
+                <div>: {alumni.nis || "........"} / {alumni.nisn || "........"}</div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
-                <div>TTL</div>
-                <div>: {alumni.tempatLahir}, {alumni.tanggalLahir}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>3. Tempat, Tgl Lahir</div>
+                <div>: {alumni.tempatLahir || "........"}, {formatDate(alumni.tanggalLahir)}</div>
             </div>
-
-            <div style={{ marginTop: "0.75rem", borderTop: "1px solid #e5e7eb", paddingTop: "0.75rem" }}>
-                <div style={{ fontWeight: "600", marginBottom: "0.5rem", fontSize: "0.9rem" }}>Data Orang Tua:</div>
-                {alumni.namaAyah && (
-                    <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
-                        <div>Nama Ayah</div>
-                        <div>: {alumni.namaAyah}</div>
-                    </div>
-                )}
-                {alumni.pekerjaanAyah && (
-                    <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
-                        <div>Pekerjaan Ayah</div>
-                        <div>: {alumni.pekerjaanAyah}</div>
-                    </div>
-                )}
-                {alumni.namaIbu && (
-                    <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
-                        <div>Nama Ibu</div>
-                        <div>: {alumni.namaIbu}</div>
-                    </div>
-                )}
-                {alumni.pekerjaanIbu && (
-                    <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
-                        <div>Pekerjaan Ibu</div>
-                        <div>: {alumni.pekerjaanIbu}</div>
-                    </div>
-                )}
-                {alumni.alamat && (
-                    <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: "0.5rem" }}>
-                        <div>Alamat</div>
-                        <div>: {alumni.alamat}</div>
-                    </div>
-                )}
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>4. Jenis Kelamin</div>
+                <div>: {alumni.jenisKelamin === 'L' ? 'Laki-laki' : alumni.jenisKelamin === 'P' ? 'Perempuan' : "........"}</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>5. Agama / WN</div>
+                <div>: {alumni.agama || "........"} / {alumni.kewarganegaraan || "........"}</div>
             </div>
 
-            <div style={{ marginTop: "0.75rem", borderTop: "1px solid #e5e7eb", paddingTop: "0.75rem" }}>
-                <div style={{ fontWeight: "600", marginBottom: "0.5rem", fontSize: "0.9rem" }}>Riwayat Akademik:</div>
-                <div style={{ fontSize: "0.75rem", color: "#666" }}>
-                    Kelas VII - IX: Naik kelas<br />
-                    Tahun Lulus: {alumni.year}
-                </div>
+            <div style={{ marginTop: "0.5rem", fontWeight: "700", borderBottom: "1px solid #000", width: "fit-content" }}>KETERANGAN ORANG TUA / WALI</div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>6. Nama Ayah</div>
+                <div>: {alumni.namaAyah || "................................"}</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>7. Nama Ibu</div>
+                <div>: {alumni.namaIbu || "................................"}</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>8. Pekerjaan Ayah/Ibu</div>
+                <div>: {alumni.pekerjaanAyah || "........"} / {alumni.pekerjaanIbu || "........"}</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>9. Alamat Orang Tua</div>
+                <div style={{ lineHeight: "1.2" }}>: {alumni.alamatOrangTua || alumni.alamat || "................................................"}</div>
+            </div>
+
+            <div style={{ marginTop: "0.5rem", fontWeight: "700", borderBottom: "1px solid #000", width: "fit-content" }}>RIWAYAT PENDIDIKAN</div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>10. Asal Sekolah</div>
+                <div>: {alumni.asalSekolah || "................................"}</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>11. Diterima di Kelas</div>
+                <div>: {alumni.kelasMasuk || alumni.class || "........"}</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>12. Tahun Lulus</div>
+                <div>: {alumni.year || "........"}</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: "0.5rem" }}>
+                <div>13. Status Kelulusan</div>
+                <div>: {alumni.statusKelulusan || "Lulus"}</div>
             </div>
         </div>
     );

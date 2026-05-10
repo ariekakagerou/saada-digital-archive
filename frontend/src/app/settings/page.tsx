@@ -433,10 +433,43 @@ export default function SettingsPage() {
                                                 <span style={{ fontWeight: "600", color: "#166534", fontSize: "0.85rem" }}>Backup Otomatis</span>
                                             </button>
                                         </div>
-                                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", lineHeight: "1.5" }}>
-                                            Backup arsip alumni ke server eksternal setiap minggu.
-                                        </p>
                                     </div>
+                                    <div style={{ height: "1px", background: "#e5e7eb" }} />
+                                    
+                                    {/* Simulasi & Demo Section */}
+                                    <div>
+                                        <h4 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--text-heading)", marginBottom: "0.9rem" }}>Simulasi & Demo</h4>
+                                        <div style={{ 
+                                            padding: "1rem", 
+                                            background: "#f8fafc", 
+                                            border: "1px solid #e2e8f0", 
+                                            borderRadius: "10px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between"
+                                        }}>
+                                            <div>
+                                                <div style={{ fontWeight: "600", fontSize: "0.85rem", color: "#334155" }}>Mode Offline (Simulasi)</div>
+                                                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Gunakan untuk demo saat sidang.</div>
+                                            </div>
+                                            <label className="switch">
+                                                <input 
+                                                    type="checkbox" 
+                                                    onChange={(e) => {
+                                                        const isOffline = e.target.checked;
+                                                        if (isOffline) {
+                                                            window.dispatchEvent(new Event('offline'));
+                                                        } else {
+                                                            window.dispatchEvent(new Event('online'));
+                                                        }
+                                                        showToast(isOffline ? "Mode Offline diaktifkan." : "Mode Online diaktifkan.");
+                                                    }}
+                                                />
+                                                <span className="slider round"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+
                                     <div style={{ height: "1px", background: "#e5e7eb" }} />
                                     <div onClick={() => setShowHelpModal(true)} className="hover-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem", background: "#f9fafb", borderRadius: "8px", cursor: "pointer", transition: "all 0.2s" }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -719,7 +752,18 @@ export default function SettingsPage() {
                 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
                 @keyframes fadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
-                .hover-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+                 .hover-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+                
+                /* Switch Style */
+                .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+                .switch input { opacity: 0; width: 0; height: 0; }
+                .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; }
+                .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; }
+                input:checked + .slider { background-color: #15803d; }
+                input:focus + .slider { box-shadow: 0 0 1px #15803d; }
+                input:checked + .slider:before { transform: translateX(20px); }
+                .slider.round { border-radius: 34px; }
+                .slider.round:before { border-radius: 50%; }
             `}</style>
         </AdminLayout>
     );
