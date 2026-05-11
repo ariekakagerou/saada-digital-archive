@@ -14,6 +14,7 @@ export default function UploadCenterPage() {
     const [uploadMode, setUploadMode] = useState<"ocr" | "bulk">("ocr");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [category, setCategory] = useState("Ijazah");
+    const [categories, setCategories] = useState<any[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle");
     const [progress, setProgress] = useState(0);
@@ -27,6 +28,19 @@ export default function UploadCenterPage() {
 
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
+
+        const fetchCategories = async () => {
+            try {
+                const res = await api.getKategoriArsip();
+                if (res.success && res.data.length > 0) {
+                    setCategories(res.data);
+                    setCategory(res.data[0].namaKategori);
+                }
+            } catch (err) {
+                console.error("Error fetching categories:", err);
+            }
+        };
+        fetchCategories();
 
         return () => {
             window.removeEventListener('online', handleOnline);
@@ -139,7 +153,15 @@ export default function UploadCenterPage() {
                                     <div className="category-selector">
                                         <label>Kategori Dokumen:</label>
                                         <div className="cat-options">
-                                            {["Ijazah", "SKHU", "Transkrip", "Rapor"].map(cat => (
+                                            {categories.length > 0 ? categories.map(cat => (
+                                                <button 
+                                                    key={cat.id} 
+                                                    className={`cat-btn ${category === cat.namaKategori ? 'active' : ''}`}
+                                                    onClick={() => setCategory(cat.namaKategori)}
+                                                >
+                                                    {cat.namaKategori}
+                                                </button>
+                                            )) : ["Ijazah", "SKHU", "Transkrip", "Rapor"].map(cat => (
                                                 <button 
                                                     key={cat} 
                                                     className={`cat-btn ${category === cat ? 'active' : ''}`}

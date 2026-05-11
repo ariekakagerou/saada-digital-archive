@@ -179,3 +179,55 @@ export const deleteArchive = async (id: number) => {
   if (!response.ok) throw new Error("Gagal menghapus arsip fisik");
   return response.json();
 };
+
+// --- Kategori Arsip ---
+export const getKategoriArsip = async () => {
+  const response = await fetch(`${API_BASE_URL}/kategoriarsip`);
+  if (!response.ok) throw new Error("Gagal mengambil kategori arsip");
+  return response.json();
+};
+
+// --- Tracer Study ---
+export const getTracerStudy = async () => {
+  const response = await fetch(`${API_BASE_URL}/tracerstudy`);
+  if (!response.ok) throw new Error("Gagal mengambil data tracer study");
+  return response.json();
+};
+
+export const createTracerStudy = async (payload: any) => {
+  const response = await fetch(`${API_BASE_URL}/tracerstudy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error("Gagal menyimpan tracer study");
+  return response.json();
+};
+
+// --- Permohonan Dokumen ---
+export const getPermohonanDokumen = async () => {
+  const response = await fetch(`${API_BASE_URL}/permohonandokumen`);
+  if (!response.ok) throw new Error("Gagal mengambil data permohonan");
+  return response.json();
+};
+
+export const createPermohonan = async (payload: any) => {
+  const response = await fetch(`${API_BASE_URL}/permohonandokumen`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error("Gagal membuat permohonan dokumen");
+  return response.json();
+};
+
+export const updatePermohonanStatus = async (id: number, status: string) => {
+  const response = await fetch(`${API_BASE_URL}/permohonandokumen/${id}/status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!response.ok) throw new Error("Gagal mengupdate status permohonan");
+  return response.json();
+};
+

@@ -41,5 +41,7 @@ namespace AlumniSmartArchive.Backend.Models
         // Navigation
         public ICollection<BukuInduk> BukuInduks { get; set; } = new List<BukuInduk>();
         public ICollection<Mutasi> Mutasis { get; set; } = new List<Mutasi>();
+        public ICollection<TracerStudy> TracerStudies { get; set; } = new List<TracerStudy>();
+        public ICollection<PermohonanDokumen> PermohonanDokumens { get; set; } = new List<PermohonanDokumen>();
     }
 }

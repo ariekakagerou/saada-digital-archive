@@ -21,6 +21,10 @@ namespace AlumniSmartArchive.Backend.Data
         public DbSet<Ekstrakurikuler> Ekstrakurikulers { get; set; }
         public DbSet<PrestasiLomba> PrestasiLombas { get; set; }
         public DbSet<Mutasi> Mutasis { get; set; }
+        // ── Fitur Tambahan (Tracer, Permohonan, Kategori) ──
+        public DbSet<TracerStudy> TracerStudies { get; set; }
+        public DbSet<PermohonanDokumen> PermohonanDokumens { get; set; }
+        public DbSet<KategoriArsip> KategoriArsips { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,6 +45,14 @@ namespace AlumniSmartArchive.Backend.Data
                 new Alumni { Id = 3, FullName = "Dewi Lestari", Nisn = "0021003456", Nis = "21003", JenisKelamin = "P", TempatLahir = "Blitar", GraduationYear = 2024, BirthDate = new DateTime(2006, 7, 10), Address = "Jl. Kenanga No. 8, Blitar" },
                 new Alumni { Id = 4, FullName = "Muhammad Rizky Hidayat", Nisn = "0021004567", Nis = "21004", JenisKelamin = "L", TempatLahir = "Kediri", GraduationYear = 2023, BirthDate = new DateTime(2005, 11, 20), Address = "Jl. Ahmad Yani No. 25, Kediri" },
                 new Alumni { Id = 5, FullName = "Nur Aisyah Rahmawati", Nisn = "0021005678", Nis = "21005", JenisKelamin = "P", TempatLahir = "Malang", GraduationYear = 2024, BirthDate = new DateTime(2006, 3, 5), Address = "Jl. Diponegoro No. 3, Malang" }
+            );
+
+            // ── Seed: Kategori Arsip ──
+            modelBuilder.Entity<KategoriArsip>().HasData(
+                new KategoriArsip { Id = 1, NamaKategori = "Ijazah", Deskripsi = "Sertifikat tanda tamat belajar" },
+                new KategoriArsip { Id = 2, NamaKategori = "SKHUN", Deskripsi = "Surat Keterangan Hasil Ujian Nasional" },
+                new KategoriArsip { Id = 3, NamaKategori = "Rapor", Deskripsi = "Buku laporan pendidikan" },
+                new KategoriArsip { Id = 4, NamaKategori = "Buku Induk", Deskripsi = "Halaman detail buku induk siswa" }
             );
 
             // ── Seed: Buku Induk (2 records to match frontend mock) ──
