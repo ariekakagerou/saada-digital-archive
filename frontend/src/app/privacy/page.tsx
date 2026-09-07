@@ -166,7 +166,7 @@ export default function PrivacyPage() {
                                             <div className="data-icon"><FileText size={16} /></div>
                                             <div className="data-text">
                                                 <strong>Riwayat Akademik</strong>
-                                                <span>Tahun lulus, nilai rapor, ijazah.</span>
+                                                <span>Tahun lulus, legger kelas, ijazah.</span>
                                             </div>
                                         </div>
                                         <div className="data-item">

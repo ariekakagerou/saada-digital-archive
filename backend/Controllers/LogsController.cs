@@ -1,5 +1,6 @@
 using AlumniSmartArchive.Backend.Data;
 using AlumniSmartArchive.Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class LogsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -18,6 +20,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // GET: api/logs
         [HttpGet]
+        [Authorize(Roles = "AdminSuper,Admin")]
         public async Task<IActionResult> GetAllLogs()
         {
             var logs = await _context.LogAktivitas
@@ -66,6 +69,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // DELETE: api/logs
         [HttpDelete("clear")]
+        [Authorize(Roles = "AdminSuper")]
         public async Task<IActionResult> ClearAllLogs()
         {
             _context.LogAktivitas.RemoveRange(_context.LogAktivitas);

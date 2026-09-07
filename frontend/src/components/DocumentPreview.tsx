@@ -74,7 +74,7 @@ export default function DocumentPreview({ alumni, activeTab }: DocumentPreviewPr
                 <IjazahContent alumni={alumni} />
             )}
 
-            {alumni.type === 'SKHU' && (
+            {(alumni.type === 'SKHU' || alumni.type === 'SKL' || alumni.type === 'SKL (Surat Keterangan Lulus)') && (
                 <SKHUContent alumni={alumni} />
             )}
 

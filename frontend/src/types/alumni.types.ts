@@ -69,7 +69,7 @@ export interface RiwayatAkademik {
 export interface DataKelulusan {
     tahunLulus: number;
     nomorIjazah?: string;
-    nomorSkhun?: string;
+    nomorSkl?: string;
     tanggalKelulusan?: Date | string;
     statusKelulusan: 'Lulus' | 'Tidak Lulus' | 'Mengulang';
     nilaiAkhir?: number;
@@ -103,7 +103,7 @@ export interface DataAdministratif {
 export interface ArsipDokumen {
     id?: number;
     alumniId: number;
-    jenisDokumen: 'Ijazah' | 'SKHU' | 'Rapor' | 'Transkrip' | 'Sertifikat' | 'Lainnya';
+    jenisDokumen: 'Ijazah' | 'SKL (Surat Keterangan Lulus)' | 'Rapor' | 'Transkrip' | 'Sertifikat' | 'Lainnya';
     namaFile: string;
     pathFile: string;
     pathFileProcessed?: string;
@@ -381,7 +381,7 @@ export interface AlumniFormData {
     // Kelulusan
     tahunLulus: number;
     nomorIjazah?: string;
-    nomorSkhun?: string;
+    nomorSkl?: string;
 
     // Orang Tua
     namaAyah?: string;
@@ -447,7 +447,7 @@ export const AGAMA = {
 
 export const JENIS_DOKUMEN = {
     IJAZAH: 'Ijazah',
-    SKHU: 'SKHU',
+    SKL: 'SKL (Surat Keterangan Lulus)',
     RAPOR: 'Rapor',
     TRANSKRIP: 'Transkrip',
     SERTIFIKAT: 'Sertifikat',

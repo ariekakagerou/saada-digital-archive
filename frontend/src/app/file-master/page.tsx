@@ -9,9 +9,9 @@ export default function FileMasterPage() {
     const fileMenus = [
         { name: "Buku Induk", href: "/buku-induk", icon: BookOpen, desc: "Kelola master identitas alumni, data pribadi, dan informasi dasar alumni.", badge: "Data Alumni", color: "#15803d", bgColor: "#e8f5e9" },
         { name: "Dokumen Ijazah", href: "/dokumen-ijazah", icon: GraduationCap, desc: "Kelola lembar ijazah, nomor ijazah, dan data kelulusan alumni.", badge: "Ijazah & Kelulusan", color: "#0f766e", bgColor: "#ccfbf1" },
-        { name: "Dokumen SKHU", href: "/dokumen-skhu", icon: Hash, desc: "Kelola dokumen SKHU dan nomor SKHU alumni.", badge: "SKHU", color: "#1d4ed8", bgColor: "#dbeafe" },
+        { name: "Dokumen SKL (Surat Keterangan Lulus)", href: "/dokumen-skhu", icon: Hash, desc: "Kelola dokumen SKL dan nomor SKL alumni.", badge: "SKL", color: "#1d4ed8", bgColor: "#dbeafe" },
         { name: "Transkrip Nilai", href: "/dokumen-transkrip", icon: BarChart2, desc: "Kelola transkrip nilai akademik alumni.", badge: "Akademik", color: "#6b21a8", bgColor: "#f3e8ff" },
-        { name: "Rekap Rapor", href: "/dokumen-rapor", icon: FileText, desc: "Kelola rekap nilai rapor semester alumni.", badge: "Rapor", color: "#c2410c", bgColor: "#ffedd5" },
+        { name: "Legger Kelas", href: "/dokumen-rapor", icon: FileText, desc: "Kelola rekap nilai legger kelas semester alumni.", badge: "Legger Kelas", color: "#c2410c", bgColor: "#ffedd5" },
     ];
 
     return (

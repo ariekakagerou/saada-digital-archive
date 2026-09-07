@@ -59,3 +59,11 @@ graph TD
 ## 4. Alur Komunikasi Data
 1. **Unggah Arsip**: Frontend mengirim file -> Backend menyimpan file -> Backend mengirim stream ke AI Service -> AI Service mengembalikan teks -> Backend menyimpan metadata & teks ke Database.
 2. **Pencarian**: Frontend mengirim *keyword* -> Backend mengambil kandidat dari Database -> Backend mengirim kandidat & *keyword* ke AI Service -> AI Service menghitung skor kemiripan -> Backend mengurutkan & mengembalikan hasil.
+
+---
+
+## 🛠️ Diagram UML Detail Lanjutan
+Untuk pemodelan UML sistem yang lebih rinci untuk dokumentasi akademis/skripsi:
+*   [f. Diagram Komponen (Component Diagram)](file:///e:/penelitian/alumni-smart-archive/docs/diagram-komponen.md)
+*   [g. Diagram Deployment (Deployment Diagram)](file:///e:/penelitian/alumni-smart-archive/docs/diagram-deployment.md)
+

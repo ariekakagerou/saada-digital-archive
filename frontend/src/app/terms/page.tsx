@@ -199,7 +199,7 @@ export default function TermsPage() {
                                 <div className="section-content">
                                     <p>
                                         Semua dokumen yang diunggah ke dalam sistem, termasuk namun tidak terbatas pada 
-                                        <strong> Ijazah, SKHU, Rapor, dan Transkrip Nilai</strong>, dikategorikan sebagai Data Sensitif.
+                                        <strong> Ijazah, SKL (Surat Keterangan Lulus), Legger Kelas, dan Transkrip Nilai</strong>, dikategorikan sebagai Data Sensitif.
                                     </p>
                                     <ul className="custom-list">
                                         <li>Dilarang keras menyebarluaskan data alumni kepada pihak ketiga tanpa izin tertulis.</li>

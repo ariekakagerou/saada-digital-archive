@@ -18,6 +18,14 @@ def preprocess_image(image_path: str) -> tuple[np.ndarray, str]:
         if img is None:
             raise ValueError("Failed to read image")
 
+        # 0. Resize gambar jika terlalu besar untuk performa CPU ThinkPad T420
+        max_dim = 1500
+        h, w = img.shape[:2]
+        if max(h, w) > max_dim:
+            scale = max_dim / float(max(h, w))
+            img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+            logger.info(f"Image resized from {w}x{h} to {img.shape[1]}x{img.shape[0]} for faster CPU processing")
+
         # 1. Convert to Grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 

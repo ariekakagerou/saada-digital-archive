@@ -378,3 +378,105 @@ a {
   color: var(--header-bg);
   font-weight: 600;
 }
+
+/* --- PWA Responsive Grid & Form Helpers --- */
+.grid-responsive-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.grid-responsive-15 {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1rem;
+}
+.grid-responsive-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+.grid-responsive-6-to-3 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.4rem;
+}
+
+@media (max-width: 600px) {
+  .grid-responsive-2,
+  .grid-responsive-15,
+  .grid-responsive-3 {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  .grid-responsive-6-to-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  
+  /* Suppress hardcoded full-screen viewport height limits for containers */
+  .premium-container {
+    padding: 0.75rem !important;
+    min-height: auto !important;
+  }
+  
+  /* Adjust modal content paddings for narrow screens */
+  .glass[style*="padding: 2rem"],
+  .modal-card {
+    padding: 1.25rem !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* --- Profile Layout Responsive Helper Classes --- */
+.grid-profile-layout {
+  display: grid;
+  grid-template-columns: 2.1fr 0.9fr;
+  gap: 2rem;
+}
+.grid-profile-split {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 2rem;
+}
+
+@media (max-width: 900px) {
+  .grid-profile-layout {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+}
+@media (max-width: 768px) {
+  .grid-profile-split {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+}
+
+/* Detail view responsive classes */
+.grid-row-detail {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.grid-responsive-4-to-2 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+@media (max-width: 500px) {
+  .grid-row-detail {
+    grid-template-columns: 1fr !important;
+    gap: 0.25rem !important;
+    padding: 0.4rem 0 !important;
+  }
+}
+@media (max-width: 600px) {
+  .grid-responsive-4-to-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+}

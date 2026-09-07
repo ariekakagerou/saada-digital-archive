@@ -12,7 +12,7 @@ export default function ContactITPage() {
         { icon: <Book size={28} />, label: "Buku Induk Digital" },
         { icon: <FileText size={28} />, label: "Arsip Ijazah" },
         { icon: <ClipboardList size={28} />, label: "Transkrip Nilai" },
-        { icon: <BarChart3 size={28} />, label: "Laporan Rapor" },
+        { icon: <BarChart3 size={28} />, label: "Laporan Legger Kelas" },
         { icon: <Search size={28} />, label: "Pencarian Cepat" },
         { icon: <Shield size={28} />, label: "Keamanan Data" },
         { icon: <Zap size={28} />, label: "Akses Prioritas" },

@@ -97,8 +97,11 @@ namespace AlumniSmartArchive.Backend.Models
         [Column("nomor_skhun")]
         public string NomorSkhun { get; set; } = string.Empty;
 
-        [Column("status_kelulusan")]
-        public string StatusKelulusan { get; set; } = "Lulus"; // "Lulus", "Mutasi", "Pindah"
+        [Column("status_siswa")]
+        public string StatusSiswa { get; set; } = "Aktif"; // "Aktif", "Lulus", "Mutasi Masuk", "Mutasi Keluar", "Drop Out"
+
+        [Column("keterangan_status")]
+        public string KeteranganStatus { get; set; } = string.Empty;
 
         // ── 7. Data Alumni (Pasca Lulus) ──
         [Column("email_alumni")]
@@ -159,6 +162,8 @@ namespace AlumniSmartArchive.Backend.Models
         public BukuInduk? BukuInduk { get; set; }
 
         public ICollection<NilaiMataPelajaran> NilaiMataPelajarans { get; set; } = new List<NilaiMataPelajaran>();
+
+        public DetailLeggerTambahan? DetailLeggerTambahan { get; set; }
     }
 
     [Table("nilai_mata_pelajaran")]

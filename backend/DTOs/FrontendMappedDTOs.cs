@@ -108,7 +108,8 @@ namespace AlumniSmartArchive.Backend.DTOs
         public string? NomorIjazah { get; set; }
         public string? NomorSkhun { get; set; }
         public DateTime? TanggalKelulusan { get; set; }
-        public string StatusKelulusan { get; set; } = "Lulus";
+        public string StatusSiswa { get; set; } = "Aktif";
+        public string KeteranganStatus { get; set; } = string.Empty;
         public double? NilaiAkhir { get; set; }
         public double? RataRata { get; set; }
 

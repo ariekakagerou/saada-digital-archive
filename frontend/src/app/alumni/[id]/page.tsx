@@ -12,7 +12,8 @@ export default function DetailArchivePage() {
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
-    const id = Number(params.id);
+    const rawId = (params.id as string) || "";
+    const id = !isNaN(Number(params.id)) ? Number(params.id) : rawId;
     const focusedType = searchParams.get("type");
 
     // State for tab switching
@@ -41,8 +42,9 @@ export default function DetailArchivePage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (!rawId) return;
         import("../../../../services/api").then(api => {
-            api.getAlumniDetail(id)
+            api.getAlumniDetail(rawId)
                 .then(res => {
                     const db = res.data;
                     
@@ -52,7 +54,7 @@ export default function DetailArchivePage() {
                             : db.arsipDokumen?.[0];
 
                         // Map C# backend DTO format to Frontend format for the UI
-                        setAlumni({
+                        const alumniData = {
                             ...db, // Spread all database fields
                             id: db.id,
                             name: db.namaLengkap,
@@ -65,11 +67,26 @@ export default function DetailArchivePage() {
                             class: db.kelasMasuk || "9A",
                             type: targetArsip ? targetArsip.jenisDokumen : "Buku Induk",
                             nomorIjazah: db.nomorIjazah || "-",
-                            nomorSKHU: db.nomorSkhun || "-",
+                            nomorSkl: db.nomorSkl || "-",
                             // Meta for UI
                             status: db.statusArsip || "Lengkap",
                             statusColor: db.statusArsip === 'Lengkap' ? "#15803d" : "#92400e",
-                            statusBg: db.statusArsip === 'Lengkap' ? "#dcfce7" : "#fef3c7"
+                            statusBg: db.statusArsip === 'Lengkap' ? "#dcfce7" : "#fef3c7",
+                            detailIjazah: null,
+                            detailSkl: null
+                        };
+                        setAlumni(alumniData);
+
+                        // Also fetch academic detail data (nilai ujian)
+                        Promise.allSettled([
+                            api.getDetailIjazahByAlumni(db.id),
+                            api.getDetailSklByAlumni(db.id)
+                        ]).then(([ijazahResult, sklResult]) => {
+                            setAlumni((prev: any) => ({
+                                ...prev,
+                                detailIjazah: ijazahResult.status === "fulfilled" ? ijazahResult.value : null,
+                                detailSkl: sklResult.status === "fulfilled" ? sklResult.value : null,
+                            }));
                         });
                     }
                 })
@@ -125,10 +142,36 @@ export default function DetailArchivePage() {
         showToastNotification("📝 Mode Edit diaktifkan", "info");
     };
 
-    const handleSaveData = () => {
-        setAlumni({ ...alumni, ...editFormData });
-        setIsEditingData(false);
-        showToastNotification("✅ Data berhasil diperbarui!", "success");
+    const handleSaveData = async () => {
+        try {
+            showToastNotification("⏳ Menyimpan perubahan...", "info");
+            const api = await import("../../../../services/api");
+            const payload = {
+                namaLengkap: editFormData.name ?? alumni.name,
+                nis: editFormData.nis ?? alumni.nis,
+                nisn: editFormData.nisn ?? alumni.nisn,
+                tempatLahir: editFormData.tempatLahir ?? alumni.tempatLahir,
+                tanggalLahir: editFormData.tanggalLahir ?? alumni.tanggalLahir,
+                asalSekolah: editFormData.namaMadrasah ?? alumni.asalSekolah,
+                kelasMasuk: editFormData.class ?? alumni.kelasMasuk,
+                tahunMasuk: editFormData.tahunMasuk ?? alumni.tahunMasuk,
+                tahunLulus: editFormData.year ?? alumni.tahunLulus,
+                nomorIjazah: editFormData.nomorIjazah ?? alumni.nomorIjazah,
+                nomorSkhun: editFormData.nomorSkl ?? alumni.nomorSkhun,
+                statusArsip: editFormData.status ?? alumni.statusArsip,
+                statusSiswa: alumni.statusSiswa ?? "Lulus",
+                jenisKelamin: alumni.jenisKelamin ?? "L",
+                agama: alumni.agama ?? "Islam",
+                kewarganegaraan: alumni.kewarganegaraan ?? "WNI",
+            };
+            await api.updateAlumni(id, payload);
+            setAlumni({ ...alumni, ...editFormData });
+            setIsEditingData(false);
+            showToastNotification("✅ Data berhasil diperbarui!", "success");
+        } catch (err) {
+            console.error("Failed to update alumni:", err);
+            showToastNotification("❌ Gagal menyimpan perubahan. Coba lagi.", "error");
+        }
     };
 
     const handleCancelEdit = () => {
@@ -140,16 +183,22 @@ export default function DetailArchivePage() {
         setShowDeleteModal(true);
     };
 
-    const confirmDelete = () => {
-        setShowDeleteModal(false);
-        showToastNotification("🗑️ Menghapus arsip...", "info");
+    const [isDeletingAlumni, setIsDeletingAlumni] = useState(false);
 
-        setTimeout(() => {
+    const confirmDelete = async () => {
+        setIsDeletingAlumni(true);
+        try {
+            const api = await import("../../../../services/api");
+            await api.deleteAlumni(id);
+            setShowDeleteModal(false);
             showToastNotification("✅ Arsip berhasil dihapus!", "success");
-            setTimeout(() => {
-                router.push("/alumni");
-            }, 1000);
-        }, 1000);
+            setTimeout(() => router.push("/alumni"), 1200);
+        } catch (err) {
+            console.error("Failed to delete alumni:", err);
+            showToastNotification("❌ Gagal menghapus arsip. Coba lagi.", "error");
+            setIsDeletingAlumni(false);
+            setShowDeleteModal(false);
+        }
     };
 
     const handlePrint = () => {
@@ -363,9 +412,9 @@ export default function DetailArchivePage() {
                                 <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Jenis Arsip</div>
                                 <div style={{ fontWeight: "600", color: "#15803d", background: "#dcfce7", padding: "0.25rem 0.75rem", borderRadius: "6px", width: "fit-content" }}>
                                     {alumni.type === 'Ijazah' && '📜 Ijazah'}
-                                    {alumni.type === 'SKHU' && '📋 SKHU'}
+                                    {(alumni.type === 'SKHU' || alumni.type === 'SKL' || alumni.type === 'SKL (Surat Keterangan Lulus)') && '📋 SKL (Surat Keterangan Lulus)'}
                                     {alumni.type === 'Transkrip' && '📊 Transkrip Nilai'}
-                                    {alumni.type === 'Rapor' && '📚 Rapor'}
+                                    {alumni.type === 'Rapor' && '📚 Legger Kelas'}
                                     {alumni.type === 'Buku Induk' && '📖 Buku Induk'}
                                 </div>
                             </div>
@@ -392,12 +441,12 @@ export default function DetailArchivePage() {
                                 </>
                             )}
 
-                            {/* SKHU Specific Fields */}
-                            {alumni.type === 'SKHU' && (
+                            {/* SKL Specific Fields */}
+                            {(alumni.type === 'SKHU' || alumni.type === 'SKL' || alumni.type === 'SKL (Surat Keterangan Lulus)') && (
                                 <>
                                     {alumni.nomorSKHU && (
                                         <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
-                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Nomor SKHU</div>
+                                            <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Nomor SKL</div>
                                             <div style={{ fontWeight: "600", color: "var(--text-heading)" }}>{alumni.nomorSKHU}</div>
                                         </div>
                                     )}
@@ -434,7 +483,7 @@ export default function DetailArchivePage() {
                                 </>
                             )}
 
-                            {/* Rapor Specific Fields */}
+                            {/* Legger Kelas Specific Fields */}
                             {alumni.type === 'Rapor' && alumni.nilaiRataRata && (
                                 <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1rem" }}>
                                     <div style={{ color: "var(--text-muted)", minWidth: "120px" }}>Nilai Rata-rata</div>
@@ -480,7 +529,7 @@ export default function DetailArchivePage() {
                                             <div className="dg-item"><span>Kelas Masuk</span><strong>{alumni.kelasMasuk || '-'}</strong></div>
                                             <div className="dg-item"><span>Tahun Lulus</span><strong>{alumni.tahunLulus || '-'}</strong></div>
                                             <div className="dg-item"><span>No. Ijazah</span><strong>{alumni.nomorIjazah || '-'}</strong></div>
-                                            <div className="dg-item"><span>No. SKHUN</span><strong>{alumni.nomorSkhun || '-'}</strong></div>
+                                            <div className="dg-item"><span>No. SKL</span><strong>{alumni.nomorSkl || '-'}</strong></div>
                                             <div className="dg-item"><span>Status Lulus</span><strong>{alumni.statusKelulusan || 'Lulus'}</strong></div>
                                         </div>
                                     </div>
@@ -550,7 +599,7 @@ export default function DetailArchivePage() {
                     </div>
 
                     {/* Data Lengkap per Jenis Dokumen */}
-                    {['Ijazah','SKHU','Transkrip','Rapor'].includes(alumni.type) && (
+                    {['Ijazah','SKHU','SKL','SKL (Surat Keterangan Lulus)','Transkrip','Rapor'].includes(alumni.type) && (
                         <DokumenDetail alumni={alumni} />
                     )}
 
@@ -932,79 +981,75 @@ export default function DetailArchivePage() {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
+            {/* Delete Confirmation Modal — Premium */}
             {showDeleteModal && (
                 <div style={{
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: "rgba(0, 0, 0, 0.5)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    zIndex: 9999,
-                    padding: "1rem"
+                    position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+                    background: "rgba(0,0,0,0.65)", backdropFilter: "blur(5px)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    zIndex: 9999, padding: "1rem"
                 }}>
                     <div style={{
-                        background: "white",
-                        borderRadius: "12px",
-                        maxWidth: "500px",
-                        width: "100%",
-                        padding: "2rem",
-                        boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
+                        background: "white", borderRadius: "18px", width: "100%",
+                        maxWidth: "460px", overflow: "hidden",
+                        boxShadow: "0 30px 90px rgba(220,38,38,0.3)",
+                        animation: "deleteModalSlide 0.35s cubic-bezier(0.34,1.56,0.64,1)"
                     }}>
-                        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-                            <div style={{
-                                width: "60px",
-                                height: "60px",
-                                background: "#fee2e2",
-                                borderRadius: "50%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                margin: "0 auto 1rem auto"
-                            }}>
-                                <AlertCircle size={32} color="#dc2626" />
+                        {/* Gradient top bar */}
+                        <div style={{ height: "5px", background: "linear-gradient(90deg, #7f1d1d, #dc2626, #ef4444, #f87171)" }} />
+                        <div style={{ padding: "2rem 2rem 1.75rem" }}>
+                            <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
+                                <div style={{
+                                    width: "80px", height: "80px",
+                                    background: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)",
+                                    borderRadius: "50%", display: "flex", alignItems: "center",
+                                    justifyContent: "center", margin: "0 auto 1.25rem",
+                                    boxShadow: "0 8px 24px rgba(220,38,38,0.2)"
+                                }}>
+                                    <AlertCircle size={38} color="#dc2626" />
+                                </div>
+                                <h3 style={{ fontSize: "1.4rem", fontWeight: "800", color: "#111827", marginBottom: "0.6rem", letterSpacing: "-0.5px" }}>
+                                    Hapus Data Alumni?
+                                </h3>
+                                <p style={{ color: "#6b7280", fontSize: "0.95rem", lineHeight: "1.65", margin: 0 }}>
+                                    Anda akan menghapus seluruh arsip milik{" "}
+                                    <strong style={{ color: "#111827" }}>{alumni?.name}</strong>{" "}
+                                    secara permanen, termasuk Buku Induk, Ijazah, SKHU, dan semua dokumen terkait.
+                                </p>
+                                <div style={{ marginTop: "1.1rem", padding: "0.75rem 1rem", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "10px", display: "flex", alignItems: "center", gap: "0.5rem", textAlign: "left" }}>
+                                    <span style={{ fontSize: "1.1rem" }}>⚠️</span>
+                                    <span style={{ fontSize: "0.85rem", color: "#991b1b", fontWeight: "700" }}>Tindakan ini tidak dapat dibatalkan!</span>
+                                </div>
                             </div>
-                            <h3 style={{ fontSize: "1.3rem", fontWeight: "700", color: "var(--text-heading)", marginBottom: "0.5rem" }}>
-                                Hapus Arsip?
-                            </h3>
-                            <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
-                                Apakah Anda yakin ingin menghapus arsip <strong>{alumni?.type}</strong> milik <strong>{alumni?.name}</strong>?
-                                <br /><br />
-                                Tindakan ini tidak dapat dibatalkan!
-                            </p>
-                        </div>
-                        <div style={{ display: "flex", gap: "0.75rem" }}>
-                            <button
-                                onClick={() => setShowDeleteModal(false)}
-                                className="btn"
-                                style={{
-                                    flex: 1,
-                                    background: "white",
-                                    border: "1px solid var(--border)",
-                                    color: "var(--text-body)",
-                                    padding: "0.75rem"
-                                }}
-                            >
-                                Batal
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="btn"
-                                style={{
-                                    flex: 1,
-                                    background: "#dc2626",
-                                    color: "white",
-                                    padding: "0.75rem"
-                                }}
-                            >
-                                <Trash2 size={16} /> Ya, Hapus
-                            </button>
+                            <div style={{ display: "flex", gap: "0.75rem" }}>
+                                <button
+                                    onClick={() => setShowDeleteModal(false)}
+                                    disabled={isDeletingAlumni}
+                                    style={{ flex: 1, padding: "0.85rem", border: "1.5px solid #e5e7eb", borderRadius: "12px", background: "white", color: "#374151", cursor: isDeletingAlumni ? "not-allowed" : "pointer", fontWeight: "700", fontSize: "0.95rem", transition: "all 0.2s" }}
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    disabled={isDeletingAlumni}
+                                    style={{ flex: 1, padding: "0.85rem", border: "none", borderRadius: "12px", background: isDeletingAlumni ? "#fca5a5" : "linear-gradient(135deg, #dc2626, #ef4444)", color: "white", cursor: isDeletingAlumni ? "not-allowed" : "pointer", fontWeight: "700", fontSize: "0.95rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", boxShadow: isDeletingAlumni ? "none" : "0 4px 15px rgba(220,38,38,0.4)", transition: "all 0.2s" }}
+                                >
+                                    {isDeletingAlumni ? (
+                                        <><span style={{ display: "inline-block", width: "15px", height: "15px", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> Menghapus...</>
+                                    ) : (
+                                        <><Trash2 size={16} /> Ya, Hapus Permanen</>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
+                    <style>{`
+                        @keyframes deleteModalSlide {
+                            from { opacity: 0; transform: translateY(40px) scale(0.92); }
+                            to { opacity: 1; transform: translateY(0) scale(1); }
+                        }
+                        @keyframes spin { to { transform: rotate(360deg); } }
+                    `}</style>
                 </div>
             )}
 

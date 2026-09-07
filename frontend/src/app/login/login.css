@@ -304,3 +304,12 @@
 }
 
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.google-login-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+.google-login-wrapper > div {
+    width: 100% !important;
+}

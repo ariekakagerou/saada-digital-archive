@@ -38,6 +38,16 @@ export default function CameraScanPage() {
         try {
             setCameraError(null);
 
+            // Cek apakah browser mendukung getUserMedia (butuh HTTPS atau localhost)
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setCameraError(
+                    "Kamera tidak dapat diakses melalui koneksi HTTP biasa.\n" +
+                    "Browser membutuhkan koneksi HTTPS untuk mengakses kamera dari perangkat lain.\n" +
+                    "Solusi: Akses via laptop menggunakan localhost:3000, atau gunakan fitur Upload File sebagai alternatif."
+                );
+                return;
+            }
+
             // Stop existing stream if any
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
@@ -62,7 +72,7 @@ export default function CameraScanPage() {
             } else if (err.name === "NotFoundError") {
                 setCameraError("Kamera tidak ditemukan. Pastikan perangkat memiliki kamera.");
             } else {
-                setCameraError("Gagal mengakses kamera. Pastikan tidak ada aplikasi lain yang menggunakan kamera.");
+                setCameraError("Gagal mengakses kamera: " + err.message);
             }
         }
     };
@@ -145,12 +155,11 @@ export default function CameraScanPage() {
 
             showToast("OCR Selesai! Mengalihkan...", "success");
 
-            const archiveId = response?.data?.id || response?.ocr?.ArchiveId || "";
+            // Fix: C# JSON serializes Id as lowercase 'id'
+            const archiveId = response?.data?.id ?? response?.data?.Id ?? response?.ocr?.archiveId ?? "";
 
-            // Redirect with Result Data (Pass ID and Type)
-            setTimeout(() => {
-                router.push(`/ocr-result?type=Ijazah&id=${archiveId}&action=review`);
-            }, 1000);
+            // Redirect langsung ke halaman OCR result
+            router.push(`/ocr-result?type=Ijazah&id=${archiveId}&action=review`);
 
         } catch (error: any) {
             console.error("Upload Error:", error);

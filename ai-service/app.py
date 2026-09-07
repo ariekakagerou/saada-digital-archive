@@ -1,4 +1,13 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import sys
+if sys.platform.startswith('win'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Security
+from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
@@ -13,12 +22,26 @@ from ocr.preprocessing import preprocess_image
 from ocr.extractor import extract_text
 from ocr.cer_calculator import calculate_cer, calculate_wer
 from ocr.enhancement import enhance_image
-from ocr.field_extractor import perform_extraction
+from ocr.field_extractor import perform_extraction, perform_extraction_raw, clean_ocr_text
 from fuzzy.levenshtein import perform_fuzzy_search
 
-# Setup Logging
-logging.basicConfig(level=logging.INFO)
+# Setup Logging to sys.stdout agar PM2 tidak menandai log INFO/standard sebagai error (merah)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:\t%(message)s",
+    stream=sys.stdout,
+    force=True
+)
 logger = logging.getLogger("AI-Service")
+
+def redirect_uvicorn_logs():
+    for logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        log_obj = logging.getLogger(logger_name)
+        for h in log_obj.handlers:
+            if hasattr(h, "stream"):
+                h.stream = sys.stdout
+
+redirect_uvicorn_logs()
 
 ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.tiff', '.bmp'}
 
@@ -27,16 +50,34 @@ def allowed_file(filename):
 
 app = FastAPI(title="Alumni Smart Archive AI Service")
 
+@app.on_event("startup")
+async def startup_event():
+    redirect_uvicorn_logs()
+
+# 🔐 API Key Configuration
+API_KEY = "SAADA_AI_SECRET_2026_KEY_BOGOR"
+API_KEY_NAME = "X-API-Key"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+async def get_api_key(header_value: str = Security(api_key_header)):
+    if header_value == API_KEY:
+        return header_value
+    raise HTTPException(
+        status_code=403, detail="Akses ditolak: API Key tidak valid atau tidak ada."
+    )
+
 # --- Models ---
 class FuzzySearchRequest(BaseModel):
     query: str
     candidates: List[str]
-    threshold: Optional[int] = 60
+    threshold: Optional[int] = 50
 
 class OCRResponse(BaseModel):
     text: str
+    rawText: Optional[str] = ""
     confidence: float
     extractedData: dict = {}
+    rawExtractedData: Optional[dict] = {}
     suggestedCategory: Optional[str] = "Lainnya"
     llmCleanedData: Optional[dict] = {}
 
@@ -82,7 +123,7 @@ def read_root():
         ]
     }
 
-@app.post("/ocr", response_model=OCRResponse)
+@app.post("/ocr", response_model=OCRResponse, dependencies=[Depends(get_api_key)])
 async def process_ocr(file: UploadFile = File(...)):
     """
     Endpoint to process an uploaded image:
@@ -105,8 +146,13 @@ async def process_ocr(file: UploadFile = File(...)):
         processed_img, _ = preprocess_image(temp_path)
         
         # 2. Extraction
-        text, confidence = extract_text(processed_img)
+        raw_text, confidence = extract_text(processed_img)
+        
+        # 3. Bersihkan teks OCR agar rapi dan mudah dibaca
+        text = clean_ocr_text(raw_text)
+        
         extracted_data = perform_extraction(text)
+        raw_extracted_data = perform_extraction_raw(raw_text)
         
         logger.info(f"OCR Success. Confidence: {confidence:.2f}")
         
@@ -118,8 +164,10 @@ async def process_ocr(file: UploadFile = File(...)):
         
         return OCRResponse(
             text=text, 
+            rawText=raw_text,
             confidence=confidence, 
             extractedData=extracted_data,
+            rawExtractedData=raw_extracted_data,
             suggestedCategory=suggested_category,
             llmCleanedData=llm_data
         )
@@ -132,7 +180,7 @@ async def process_ocr(file: UploadFile = File(...)):
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
-@app.post("/ocr-enhanced", response_model=EnhancedOCRResponse)
+@app.post("/ocr-enhanced", response_model=EnhancedOCRResponse, dependencies=[Depends(get_api_key)])
 async def process_ocr_enhanced(file: UploadFile = File(...)):
     """
     Enhanced OCR endpoint with advanced image processing:
@@ -183,7 +231,7 @@ async def process_ocr_enhanced(file: UploadFile = File(...)):
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
-@app.post("/calculate-cer", response_model=CERResponse)
+@app.post("/calculate-cer", response_model=CERResponse, dependencies=[Depends(get_api_key)])
 def calculate_cer_endpoint(payload: CERRequest):
     """
     Calculate Character Error Rate (CER) between reference and hypothesis text.
@@ -204,7 +252,7 @@ def calculate_cer_endpoint(payload: CERRequest):
         logger.error(f"CER Calculation Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/calculate-wer", response_model=CERResponse)
+@app.post("/calculate-wer", response_model=CERResponse, dependencies=[Depends(get_api_key)])
 def calculate_wer_endpoint(payload: CERRequest):
     """
     Calculate Word Error Rate (WER) between reference and hypothesis text.
@@ -225,7 +273,7 @@ def calculate_wer_endpoint(payload: CERRequest):
         logger.error(f"WER Calculation Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/ocr-compare", response_model=ComparativeOCRResponse)
+@app.post("/ocr-compare", response_model=ComparativeOCRResponse, dependencies=[Depends(get_api_key)])
 async def process_ocr_comparative(file: UploadFile = File(...)):
     """
     Experimental endpoint for Thesis Evaluation:
@@ -289,7 +337,7 @@ async def process_ocr_comparative(file: UploadFile = File(...)):
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
-@app.post("/fuzzy-search", response_model=dict)
+@app.post("/fuzzy-search", response_model=dict, dependencies=[Depends(get_api_key)])
 def fuzzy_search_endpoint(payload: FuzzySearchRequest):
     """
     Endpoint for Fuzzy Search using Levenshtein Distance

@@ -1,4 +1,5 @@
 using AlumniSmartArchive.Backend.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,6 +7,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DashboardController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -24,7 +26,7 @@ namespace AlumniSmartArchive.Backend.Controllers
             var totalPetugas = await _context.Users.CountAsync();
 
             var ijazahCount = await _context.Archives.CountAsync(a => a.JenisArsip == "Ijazah");
-            var skhuCount = await _context.Archives.CountAsync(a => a.JenisArsip == "SKHU");
+            var skhuCount = await _context.Archives.CountAsync(a => a.JenisArsip == "SKHU" || a.JenisArsip == "SKL" || a.JenisArsip == "SKL (Surat Keterangan Lulus)" || a.JenisArsip == "SKHUN");
             var raporCount = await _context.Archives.CountAsync(a => a.JenisArsip == "Rapor");
             var transkripCount = await _context.Archives.CountAsync(a => a.JenisArsip == "Transkrip" || a.JenisArsip == "Transkrip Nilai");
             var bukuIndukDocCount = await _context.Archives.CountAsync(a => a.JenisArsip == "Buku Induk");

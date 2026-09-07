@@ -1,0 +1,143 @@
+================================================================================
+DOKUMENTASI RUMUS MATEMATIS, ALGORITMA, DAN NOMOR BARIS KODE (AI-SERVICE)
+================================================================================
+
+1. CHARACTER ERROR RATE (CER) & AKURASI OCR
+   - Rumus CER     : CER = ((S + D + I) / N) * 100%
+   - Rumus Akurasi : Accuracy = max(0, 100 - CER)
+   - Keterangan    : S = Substitusi, D = Deletions, I = Insertions, N = Jumlah karakter Ground Truth (Reference).
+   
+   Nomor Baris Kode:
+   * ocr/cer_calculator.py:
+     - Baris 6 - 48   : Definis fungsi calculate_cer()
+     - Baris 31       : Kalkulasi CER: cer = (distance / len(ref)) * 100
+     - Baris 34       : Kalkulasi Akurasi: accuracy = max(0, 100 - cer)
+   * eval_engine.py:
+     - Baris 78       : Penganggilan calculate_cer(ground_truth, ocr_text)
+     - Baris 84 - 85  : Penyimpanan metric CER dan Accuracy per dokumen
+     - Baris 102      : Rata-rata CER: avg_cer = total_cer / count
+     - Baris 131      : Rata-rata Akurasi: "average_accuracy": round(100 - avg_cer, 2)
+   * app.py:
+     - Baris 243 - 248: Endpoint /calculate-cer (Kalkulasi CER via REST API)
+
+--------------------------------------------------------------------------------
+
+2. WORD ERROR RATE (WER)
+   - Rumus WER     : WER = ((Sw + Dw + Iw) / Nw) * 100%
+   - Rumus Akurasi : Accuracy = max(0, 100 - WER)
+   - Keterangan    : Sw = Substitusi Kata, Dw = Deletions Kata, Iw = Insertions Kata, Nw = Total kata Ground Truth.
+   
+   Nomor Baris Kode:
+   * ocr/cer_calculator.py:
+     - Baris 140 - 184: Definisi fungsi calculate_wer()
+     - Baris 162      : Kalkulasi WER: wer = (distance / len(ref_words)) * 100
+     - Baris 167      : Kalkulasi Akurasi: accuracy = max(0, 100 - wer)
+   * app.py:
+     - Baris 264 - 269: Endpoint /calculate-wer (Kalkulasi WER via REST API)
+
+--------------------------------------------------------------------------------
+
+3. JARAK LEVENSHTEIN (LEVENSHTEIN EDIT DISTANCE & OPERASI DP)
+   - Algoritma Pemrograman Dinamis (DP Matrix):
+     * dp[i][0] = i  (Operasi Deletion)
+     * dp[0][j] = j  (Operasi Insertion)
+     * Jika s1[i-1] == s2[j-1] : dp[i][j] = dp[i-1][j-1]
+     * Jika berbeda           : dp[i][j] = 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
+   
+   Nomor Baris Kode:
+   * ocr/cer_calculator.py:
+     - Baris 55 - 96  : Fungsi levenshtein_distance() (Edit Distance tingkat Karakter)
+     - Baris 74 - 91  : Pengisian Matriks DP karakter
+     - Baris 99 - 137 : Fungsi count_operations() (Backtracking matriks DP untuk menghitung S, D, I)
+     - Baris 116 - 128: Deteksi operasi Substitusi, Deletion, dan Insertion pada backtracking
+     - Baris 187 - 215: Fungsi levenshtein_distance_words() (Edit Distance tingkat Kata)
+
+--------------------------------------------------------------------------------
+
+4. FUZZY STRING MATCHING & NORMALISASI HOMOGLYPH OCR
+   - Formula & Logika:
+     * Token Score     : sum(max(fuzz.ratio(qw, cw) for cw in candidate_words) for qw in query_words) / len(query_words)
+     * OCR Homoglyph   : Pemetaan visual karakter OCR ('0' -> 'o', '1' -> 'i'/'l', '5' -> 's', '8' -> 'b', '3' -> 'e', '2' -> 'z', '@' -> 'a')
+     * Skor Akhir      : final_score = max(score_std, score_norm)
+   
+   Nomor Baris Kode:
+   * fuzzy/levenshtein.py:
+     - Baris 7 - 19   : OCR_HOMOGLYPH_MAP (Kamus translasi Homoglyph OCR)
+     - Baris 21 - 27  : Fungsi normalize_ocr_homoglyphs()
+     - Baris 29 - 87  : Fungsi perform_fuzzy_search()
+     - Baris 64 - 67  : Perhitungan token score & WRatio standar
+     - Baris 70 - 73  : Perhitungan token score & WRatio versi normalisasi Homoglyph OCR
+     - Baris 76       : Pemilihan skor tertinggi: final_score = max(score_std, score_norm)
+   * ocr/field_extractor.py:
+     - Baris 5 - 22   : LETTER_TO_DIGIT_MAP & DIGIT_TO_LETTER_MAP (Translasi Homoglyph Angka/Huruf)
+     - Baris 25 - 40  : Fungsi normalize_numeric_ocr() & normalize_text_ocr()
+   * app.py:
+     - Baris 340 - 346: Endpoint /fuzzy-search
+   * test_ocr_confusion.py:
+     - Baris 5 - 29   : Pengujian Fuzzy Search terhadap kesalahan baca OCR
+
+--------------------------------------------------------------------------------
+
+5. BINARISASI SAUVOLA (SAUVOLA BINARIZATION)
+   - Rumus Threshold: T(x,y) = mean(x,y) * (1 + k * ((std(x,y) / R) - 1))
+   - Parameter      : mean(x,y) = Rata-rata lokal, std(x,y) = Deviasi standar lokal, R = 128, k = 0.2
+   
+   Nomor Baris Kode:
+   * ocr/enhancement.py:
+     - Baris 231 - 275: Fungsi binarize_sauvola()
+     - Baris 253      : Hitung rata-rata lokal (boxFilter)
+     - Baris 259      : Hitung standar deviasi lokal: std = np.sqrt(variance)
+     - Baris 264      : Kalkulasi ambang Sauvola: threshold = mean * (1 + k * ((std / R) - 1))
+     - Baris 267      : Penerapan ambang batas biner: binary = np.where(gray > threshold, 255, 0)
+
+--------------------------------------------------------------------------------
+
+6. DETEKSI & KOREKSI KEMIRINGAN GAMBAR (DESKEW ANGLE / HOUGH LINES)
+   - Rumus Sudut Skew : angle = degrees(theta) - 90, median_angle = median(angles)
+   - Matriks Affine 2D: M = getRotationMatrix2D(center, median_angle, 1.0)
+   
+   Nomor Baris Kode:
+   * ocr/enhancement.py:
+     - Baris 50 - 108 : Fungsi deskew_image()
+     - Baris 74       : Deteksi garis teks dengan Hough Line Transform: cv2.HoughLines(edges, 1, np.pi / 180, 200)
+     - Baris 83       : Konversi radian ke derajat: angle = np.degrees(theta) - 90
+     - Baris 90       : Median sudut kemiringan: median_angle = np.median(angles)
+     - Baris 99 - 102 : Matriks rotasi 2D & Affine Warp: cv2.getRotationMatrix2D() & cv2.warpAffine()
+
+--------------------------------------------------------------------------------
+
+7. CONTRAST LIMITED ADAPTIVE HISTOGRAM EQUALIZATION (CLAHE)
+   - Konsep          : Pembagian gambar menjadi grid ubin 8x8 dan perataan histogram lokal dengan pembatasan kontras (clip limit = 2.0).
+   
+   Nomor Baris Kode:
+   * ocr/enhancement.py:
+     - Baris 141 - 173: Fungsi apply_clahe()
+     - Baris 163      : Inisialisasi CLAHE: clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+     - Baris 166      : Penerapan CLAHE pada citra grayscale: enhanced = clahe.apply(gray)
+
+--------------------------------------------------------------------------------
+
+8. PENAJAMAN GAMBAR (SHARPENING KERNEL FILTER)
+   - Matriks Kernel : [[ 0, -1,  0],
+                       [-1,  5, -1],
+                       [ 0, -1,  0]]
+   
+   Nomor Baris Kode:
+   * ocr/enhancement.py:
+     - Baris 175 - 203: Fungsi sharpen_image()
+     - Baris 189 - 193: Definisi matriks kernel penajaman (Unsharp Masking)
+     - Baris 196      : Operasi konvolusi 2D: sharpened = cv2.filter2D(image, -1, kernel)
+
+--------------------------------------------------------------------------------
+
+9. RATA-RATA CONFIDENCE OCR & THRESHOLDING ADAPTIF
+   - Rumus Rata-Rata: Confidence_Avg = sum(confidence_i) / count
+   
+   Nomor Baris Kode:
+   * ocr/extractor.py:
+     - Baris 78       : Rata-rata confidence EasyOCR: (total_confidence / count)
+     - Baris 99       : Rata-rata confidence Tesseract: sum(confidences) / len(confidences)
+   * ocr/preprocessing.py:
+     - Baris 38 - 40  : Thresholding Adaptif Gaussian: cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, ...)
+
+================================================================================

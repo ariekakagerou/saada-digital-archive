@@ -3,19 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev -H 0.0.0.0 --experimental-https",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.5",
     "canvas": "^3.2.1",
     "lucide-react": "^0.562.0",
     "next": "16.1.2",
     "next-pwa": "^5.6.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "sharp": "^0.34.5"
+    "recharts": "^3.8.1",
+    "sharp": "^0.34.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/next-pwa": "^5.6.9",

@@ -9,8 +9,10 @@ import {
 } from "lucide-react";
 import * as api from "../../../services/api";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function UploadCenterPage() {
+    const router = useRouter();
     const [uploadMode, setUploadMode] = useState<"ocr" | "bulk">("ocr");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [category, setCategory] = useState("Ijazah");
@@ -20,6 +22,7 @@ export default function UploadCenterPage() {
     const [progress, setProgress] = useState(0);
     const [progressStep, setProgressStep] = useState("");
     const [isOnline, setIsOnline] = useState(true);
+    const [uploadedArchiveId, setUploadedArchiveId] = useState<number | null>(null);
 
     useEffect(() => {
         setIsOnline(navigator.onLine);
@@ -59,30 +62,39 @@ export default function UploadCenterPage() {
         if (!selectedFile || !isOnline) return;
         setIsUploading(true);
         setUploadStatus("idle");
+        setUploadedArchiveId(null);
         
-        // Detailed Progress Simulation
         setProgress(10);
-        setProgressStep("Uploading file to server...");
+        setProgressStep("Mengunggah file ke server...");
         
         try {
-            // Fake delay for better UX visibility of steps
-            await new Promise(r => setTimeout(r, 800));
-            setProgress(40);
-            setProgressStep("AI Service: Preprocessing image...");
+            await new Promise(r => setTimeout(r, 600));
+            setProgress(35);
+            setProgressStep("AI Service: Preprocessing gambar...");
             
-            await new Promise(r => setTimeout(r, 1200));
-            setProgress(70);
-            setProgressStep("AI Service: Extracting data with OCR...");
+            await new Promise(r => setTimeout(r, 800));
+            setProgress(65);
+            setProgressStep("AI Service: Mengekstrak teks dengan OCR (1-3 menit)...");
 
-            await api.uploadArchive(selectedFile!, category);
+            const result = await api.uploadArchive(selectedFile!, category);
             
             setProgress(100);
-            setProgressStep("Finished!");
-            setUploadStatus("success");
-            setSelectedFile(null);
+            setProgressStep("Selesai! Mengarahkan ke halaman hasil...");
+
+            // Ambil archive ID dari response untuk redirect
+            const archiveId = result?.data?.Id ?? result?.data?.id;
+            if (archiveId) {
+                setUploadedArchiveId(archiveId);
+                // Redirect langsung ke halaman OCR result
+                router.push(`/ocr-result?id=${archiveId}&type=${encodeURIComponent(category)}`);
+            } else {
+                // Fallback jika ID tidak ditemukan
+                setUploadStatus("success");
+                setSelectedFile(null);
+            }
         } catch (err) {
             setUploadStatus("error");
-            setProgressStep("Process failed.");
+            setProgressStep("Gagal diproses.");
         } finally {
             setIsUploading(false);
         }
@@ -114,7 +126,7 @@ export default function UploadCenterPage() {
                         <Camera size={20} />
                         <div className="tab-text">
                             <strong>Digitalkan Arsip (OCR)</strong>
-                            <span>Scan Ijazah / SKHU Satuan</span>
+                            <span>Scan Ijazah / SKL Satuan</span>
                         </div>
                     </button>
                     <button 
@@ -161,13 +173,18 @@ export default function UploadCenterPage() {
                                                 >
                                                     {cat.namaKategori}
                                                 </button>
-                                            )) : ["Ijazah", "SKHU", "Transkrip", "Rapor"].map(cat => (
+                                            )) : [
+                                                { value: "Ijazah", label: "Ijazah" },
+                                                { value: "SKL (Surat Keterangan Lulus)", label: "SKL (Surat Keterangan Lulus)" },
+                                                { value: "Transkrip", label: "Transkrip" },
+                                                { value: "Rapor", label: "Legger Kelas" },
+                                            ].map(cat => (
                                                 <button 
-                                                    key={cat} 
-                                                    className={`cat-btn ${category === cat ? 'active' : ''}`}
-                                                    onClick={() => setCategory(cat)}
+                                                    key={cat.value} 
+                                                    className={`cat-btn ${category === cat.value ? 'active' : ''}`}
+                                                    onClick={() => setCategory(cat.value)}
                                                 >
-                                                    {cat}
+                                                    {cat.label}
                                                 </button>
                                             ))}
                                         </div>

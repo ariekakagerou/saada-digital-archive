@@ -53,7 +53,7 @@ export default function HistoryPage() {
                                 <option>Semua Arsip</option>
                                 <option>Transkrip Nilai</option>
                                 <option>Ijazah</option>
-                                <option>SKHU</option>
+                                <option>SKL (Surat Keterangan Lulus)</option>
                             </select>
 
                             <div style={{ flex: 1, position: "relative" }}>

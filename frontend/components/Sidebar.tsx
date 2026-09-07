@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileText, Upload, Search, History, LogOut, Menu, X, Settings, Camera, BookOpen, GraduationCap, Hash, BarChart2, ChevronDown, ChevronRight, FolderOpen } from "lucide-react";
+import { LayoutDashboard, FileText, Upload, Search, History, LogOut, Menu, X, Settings, Camera, BookOpen, GraduationCap, Hash, BarChart2, ChevronDown, ChevronRight, FolderOpen, MapPin, ClipboardList } from "lucide-react";
+import { logout } from "@services/api";
 
 export default function Sidebar() {
     const [isMounted, setIsMounted] = useState(false);
@@ -13,7 +14,9 @@ export default function Sidebar() {
     // State untuk melihat apakah menu folder dokumen sedang terbuka
     const [isDocOpen, setIsDocOpen] = useState(
         pathname.includes("/buku-induk") || 
-        pathname.includes("/dokumen-")
+        pathname.includes("/dokumen-") ||
+        pathname.includes("/tracer-study") ||
+        pathname.includes("/permohonan-dokumen")
     );
 
     useEffect(() => {
@@ -25,29 +28,38 @@ export default function Sidebar() {
         }
     }, []);
 
+    const handleLogout = () => {
+        logout(); // Hapus token dari localStorage dan cookie, lalu redirect ke /login
+    };
+
     const menuItems = [
-        { name: "Beranda", href: "/dashboard", icon: LayoutDashboard, roles: ["Operator", "Penulis", "Admin"] },
-        { name: "Unggah Arsip", href: "/upload", icon: Upload, roles: ["Operator"] },
-        { name: "Scan Kamera", href: "/scan-camera", icon: Camera, roles: ["Operator"] },
-        { name: "Cari Alumni", href: "/alumni", icon: Search, roles: ["Penulis", "Admin"] },
+        { name: "Beranda", href: "/dashboard", icon: LayoutDashboard, roles: ["Operator", "Penulis", "Admin", "AdminSuper", "Alumni"] },
+        { name: "Dokumen Saya", href: "/alumni/my-documents", icon: GraduationCap, roles: ["Alumni"] },
+        { name: "Permohonan Legalisir", href: "/alumni/my-requests", icon: ClipboardList, roles: ["Alumni"] },
+        { name: "Tracer Study", href: "/tracer-study", icon: MapPin, roles: ["Alumni"] },
+        { name: "Unggah Arsip", href: "/upload", icon: Upload, roles: ["Operator", "AdminSuper"] },
+        { name: "Scan Kamera", href: "/scan-camera", icon: Camera, roles: ["Operator", "AdminSuper"] },
+        { name: "Cari Alumni", href: "/alumni", icon: Search, roles: ["Penulis", "Admin", "AdminSuper"] },
         { 
             name: "File Master Siswa", 
             icon: FolderOpen, 
-            roles: ["Penulis", "Admin"],
+            roles: ["Penulis", "Admin", "AdminSuper"],
             isParent: true, // penanda bahwa ini punya sub-menu
             subItems: [
                 { name: "Buku Induk", href: "/buku-induk", icon: BookOpen },
                 { name: "Dokumen Ijazah", href: "/dokumen-ijazah", icon: GraduationCap },
-                { name: "Dokumen SKHU", href: "/dokumen-skhu", icon: Hash },
+                { name: "Dokumen SKL (Surat Keterangan Lulus)", href: "/dokumen-skhu", icon: Hash },
                 { name: "Transkrip Nilai", href: "/dokumen-transkrip", icon: BarChart2 },
                 { name: "Rekap Rapor", href: "/dokumen-rapor", icon: FileText },
+                { name: "Tracer Study", href: "/tracer-study", icon: MapPin },
+                { name: "Permohonan Legalisir", href: "/permohonan-dokumen", icon: ClipboardList },
             ]
         },
-        { name: "Riwayat Audit", href: "/history", icon: History, roles: ["Admin"] },
-        { name: "Pengaturan", href: "/settings", icon: Settings, roles: ["Admin"] },
+        { name: "Riwayat Audit", href: "/history", icon: History, roles: ["Admin", "AdminSuper"] },
+        { name: "Pengaturan", href: "/settings", icon: Settings, roles: ["Admin", "AdminSuper", "Operator", "Penulis", "Alumni"] },
     ];
 
-    const filteredMenu = menuItems.filter(item => userRole === "AdminSuper" || item.roles.includes(userRole));
+    const filteredMenu = menuItems.filter(item => item.roles.includes(userRole));
 
     return (
         <>
@@ -155,6 +167,32 @@ export default function Sidebar() {
                         );
                     })}
                 </nav>
+
+                {/* Tombol Keluar */}
+                {isMounted && (
+                    <button
+                        onClick={handleLogout}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.75rem",
+                            padding: "1rem 1.5rem",
+                            margin: "0.5rem 1rem",
+                            background: "rgba(239, 68, 68, 0.15)",
+                            color: "#fca5a5",
+                            border: "1px solid rgba(239, 68, 68, 0.3)",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            fontSize: "0.9rem",
+                            width: "calc(100% - 2rem)",
+                            transition: "all 0.2s ease",
+                        }}
+                    >
+                        <LogOut size={18} />
+                        Keluar
+                    </button>
+                )}
             </aside>
 
             {/* Bottom Nav dihapus dari sini karena dikelola di AdminLayout.tsx khusus desain floating camera */}

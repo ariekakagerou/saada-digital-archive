@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AlumniSmartArchive.Backend.Data;
@@ -7,6 +8,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class KategoriArsipController : ControllerBase
     {
         private readonly AppDbContext _context;

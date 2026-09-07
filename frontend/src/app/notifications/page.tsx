@@ -46,7 +46,7 @@ const DUMMY_NOTIFICATIONS: NotificationItem[] = [
     {
         id: 4,
         title: "Kualitas Gambar Rendah",
-        message: "Pemindaian dokumen Rapor - Siti Aminah terdeteksi buram. Disarankan unggah ulang.",
+        message: "Pemindaian dokumen Legger Kelas - Siti Aminah terdeteksi buram. Disarankan unggah ulang.",
         type: "alert",
         timestamp: "2024-04-20 10:20",
         isRead: true,

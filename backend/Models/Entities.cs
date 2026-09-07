@@ -28,13 +28,21 @@ namespace AlumniSmartArchive.Backend.Models
         public string PasswordHash { get; set; } = string.Empty;
         
         [Column("peran")]
-        public string Role { get; set; } = "Operator"; // Operator, Penulis, Admin, AdminSuper
+        public string Role { get; set; } = "Operator"; // Operator, Penulis, Admin, AdminSuper, Alumni
+
+        [Column("alumni_id")]
+        public int? AlumniId { get; set; }
+
+        [ForeignKey("AlumniId")]
+        public Alumni? Alumni { get; set; }
 
         [Column("aktif")]
         public bool Active { get; set; } = true;
 
         [Column("dibuat_pada")]
         public DateTime DibuatPada { get; set; } = DateTime.UtcNow;
+
+        public UserProfile? Profile { get; set; }
     }
 
     [Table("arsip")]
@@ -129,4 +137,66 @@ namespace AlumniSmartArchive.Backend.Models
         [ForeignKey("PenggunaId")]
         public User? Pengguna { get; set; }
     }
+
+    [Table("notifikasi")]
+    public class Notifikasi
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("pengguna_id")]
+        public int? PenggunaId { get; set; }
+
+        [Required]
+        [Column("judul")]
+        public string Judul { get; set; } = string.Empty;
+
+        [Required]
+        [Column("pesan")]
+        public string Pesan { get; set; } = string.Empty;
+
+        [Column("tipe")]
+        public string Tipe { get; set; } = "info"; // info, warning, success
+
+        [Column("dibaca")]
+        public bool Dibaca { get; set; } = false;
+
+        [Column("dibuat_pada")]
+        public DateTime DibuatPada { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey("PenggunaId")]
+        public User? Pengguna { get; set; }
+    }
+
+    [Table("pesan_bantuan")]
+    public class PesanBantuan
+    {
+        [Key]
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Required]
+        [Column("nama_pengirim")]
+        public string NamaPengirim { get; set; } = string.Empty;
+
+        [Required]
+        [Column("email_pengirim")]
+        public string EmailPengirim { get; set; } = string.Empty;
+
+        [Required]
+        [Column("subjek")]
+        public string Subjek { get; set; } = string.Empty;
+
+        [Required]
+        [Column("pesan")]
+        public string Pesan { get; set; } = string.Empty;
+
+        [Column("status")]
+        public string Status { get; set; } = "open"; // open, in-progress, resolved
+
+        [Column("dibuat_pada")]
+        public DateTime DibuatPada { get; set; } = DateTime.UtcNow;
+    }
 }
+

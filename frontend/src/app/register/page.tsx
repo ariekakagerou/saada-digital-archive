@@ -4,6 +4,7 @@ import { useState } from "react";
 import { User, Lock, ArrowRight, Eye, EyeOff, ShieldCheck, Mail, Briefcase, Sparkles, Book, FileText, ClipboardList, BarChart3, Search, Shield, Zap, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { fetchApi } from "@/lib/api";
 import "./register.css";
 
 export default function RegisterPage() {
@@ -26,7 +27,7 @@ export default function RegisterPage() {
         { icon: <Book size={28} />, label: "Buku Induk Digital" },
         { icon: <FileText size={28} />, label: "Arsip Ijazah" },
         { icon: <ClipboardList size={28} />, label: "Transkrip Nilai" },
-        { icon: <BarChart3 size={28} />, label: "Laporan Rapor" },
+        { icon: <BarChart3 size={28} />, label: "Laporan Legger Kelas" },
         { icon: <Search size={28} />, label: "Pencarian Cepat" },
         { icon: <Shield size={28} />, label: "Keamanan Data" },
         { icon: <Zap size={28} />, label: "Akses Prioritas" },
@@ -49,8 +50,18 @@ export default function RegisterPage() {
         }
 
         try {
-            // Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const endpoint = formData.role === "Alumni" ? '/api/auth/register-alumni' : '/api/auth/register';
+            await fetchApi(endpoint, {
+                method: 'POST',
+                body: JSON.stringify({
+                    nama: formData.nama,
+                    nip: formData.nip,
+                    nisn: formData.nip,
+                    email: formData.email,
+                    password: formData.password,
+                    role: formData.role
+                })
+            });
             
             setRegisterSuccess(true);
             setTimeout(() => {
@@ -153,6 +164,7 @@ export default function RegisterPage() {
                                             <option value="Operator">Operator</option>
                                             <option value="Penulis">Penulis</option>
                                             <option value="Admin">Admin</option>
+                                            <option value="Alumni">Alumni Mandiri</option>
                                         </select>
                                     </div>
                                 </div>

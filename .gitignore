@@ -31,3 +31,7 @@ yarn-error.log*
 # Database
 *.db
 *.sqlite
+
+# Backend build artifacts & uploaded files
+backend/publish/
+backend/uploads/

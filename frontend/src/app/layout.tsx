@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import GlobalOfflineIndicator from "../components/GlobalOfflineIndicator";
+import ServiceWorkerRegister from "../components/ServiceWorkerRegister";
+import Providers from "../components/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,8 +37,11 @@ export default function RootLayout({
   return (
     <html lang="id" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
-        <GlobalOfflineIndicator />
-        {children}
+        <Providers>
+          <ServiceWorkerRegister />
+          <GlobalOfflineIndicator />
+          {children}
+        </Providers>
       </body>
     </html>
   );

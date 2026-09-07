@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace AlumniSmartArchive.Backend.Models
 {
@@ -39,9 +40,22 @@ namespace AlumniSmartArchive.Backend.Models
         public DateTime DibuatPada { get; set; } = DateTime.UtcNow;
 
         // Navigation
+        [JsonIgnore]
         public ICollection<BukuInduk> BukuInduks { get; set; } = new List<BukuInduk>();
+        
+        [JsonIgnore]
         public ICollection<Mutasi> Mutasis { get; set; } = new List<Mutasi>();
+        
+        [JsonIgnore]
         public ICollection<TracerStudy> TracerStudies { get; set; } = new List<TracerStudy>();
+        
+        [JsonIgnore]
         public ICollection<PermohonanDokumen> PermohonanDokumens { get; set; } = new List<PermohonanDokumen>();
+        
+        [JsonIgnore]
+        public ICollection<DetailIjazah> DetailIjazahs { get; set; } = new List<DetailIjazah>();
+        
+        [JsonIgnore]
+        public ICollection<DetailSkl> DetailSkls { get; set; } = new List<DetailSkl>();
     }
 }

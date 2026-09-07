@@ -1,5 +1,6 @@
 using AlumniSmartArchive.Backend.Data;
 using AlumniSmartArchive.Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Hanya user yang sudah login yang bisa akses
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -18,6 +20,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // GET: api/users
         [HttpGet]
+        [Authorize(Roles = "AdminSuper,Admin")]
         public async Task<IActionResult> GetAll()
         {
             var users = await _context.Users
@@ -39,6 +42,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // GET: api/users/5
         [HttpGet("{id}")]
+        [Authorize(Roles = "AdminSuper,Admin")]
         public async Task<IActionResult> GetById(int id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -58,6 +62,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // PUT: api/users/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "AdminSuper")]
         public async Task<IActionResult> Update(int id, [FromBody] UserUpdateRequest request)
         {
             var user = await _context.Users.FindAsync(id);
@@ -77,6 +82,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // DELETE: api/users/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "AdminSuper")]
         public async Task<IActionResult> Delete(int id)
         {
             var user = await _context.Users.FindAsync(id);

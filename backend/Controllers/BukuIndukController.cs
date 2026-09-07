@@ -1,6 +1,7 @@
 using AlumniSmartArchive.Backend.Data;
 using AlumniSmartArchive.Backend.DTOs;
 using AlumniSmartArchive.Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class BukuIndukController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -30,6 +32,8 @@ namespace AlumniSmartArchive.Backend.Controllers
             var query = _context.BukuInduks
                 .Include(b => b.NilaiSemesters)
                     .ThenInclude(ns => ns.NilaiMataPelajarans)
+                .Include(b => b.NilaiSemesters)
+                    .ThenInclude(ns => ns.DetailLeggerTambahan)
                 .Include(b => b.Ekstrakurikulers)
                 .Include(b => b.PrestasiLombas)
                 .AsQueryable();
@@ -87,6 +91,8 @@ namespace AlumniSmartArchive.Backend.Controllers
             var record = await _context.BukuInduks
                 .Include(b => b.NilaiSemesters)
                     .ThenInclude(ns => ns.NilaiMataPelajarans)
+                .Include(b => b.NilaiSemesters)
+                    .ThenInclude(ns => ns.DetailLeggerTambahan)
                 .Include(b => b.Ekstrakurikulers)
                 .Include(b => b.PrestasiLombas)
                 .FirstOrDefaultAsync(b => b.Id == id);
@@ -99,6 +105,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // POST: api/bukuinduk
         [HttpPost]
+        [Authorize(Roles = "AdminSuper,Admin,Operator")]
         public async Task<IActionResult> Create([FromBody] CreateBukuIndukRequest request)
         {
             // Find or create Alumni record
@@ -150,7 +157,8 @@ namespace AlumniSmartArchive.Backend.Controllers
                 TahunLulus = request.TahunLulus,
                 NomorIjazah = request.NomorIjazah,
                 NomorSkhun = request.NomorSkhun,
-                StatusKelulusan = request.StatusKelulusan,
+                StatusSiswa = request.StatusSiswa,
+                KeteranganStatus = request.KeteranganStatus,
                 EmailAlumni = request.EmailAlumni,
                 NomorHpAlumni = request.NomorHpAlumni,
                 PekerjaanSekarang = request.PekerjaanSekarang,
@@ -222,6 +230,7 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // POST: api/bukuinduk/import
         [HttpPost("import")]
+        [Authorize(Roles = "AdminSuper,Admin,Operator")]
         public async Task<IActionResult> Import([FromBody] List<CreateBukuIndukRequest> requests)
         {
             if (requests == null || !requests.Any())
@@ -282,14 +291,67 @@ namespace AlumniSmartArchive.Backend.Controllers
                     KelasMasuk = req.KelasMasuk ?? "",
                     TahunLulus = req.TahunLulus ?? "",
                     NomorIjazah = req.NomorIjazah ?? "",
-                    StatusKelulusan = req.StatusKelulusan ?? "Lulus",
+                    NomorSkhun = req.NomorSkhun ?? "",
+                    StatusSiswa = req.StatusSiswa ?? "Aktif",
+                    KeteranganStatus = req.KeteranganStatus ?? "",
                     StatusArsip = req.StatusArsip ?? "Lengkap",
                     
                     DibuatPada = DateTime.UtcNow,
                     DiperbaruiPada = DateTime.UtcNow
                 };
 
+                bukuInduk.NilaiSemesters = new List<NilaiSemester>();
+                for (int sem = 1; sem <= 6; sem++)
+                {
+                    bukuInduk.NilaiSemesters.Add(new NilaiSemester
+                    {
+                        Semester = sem.ToString(),
+                        RataRata = 0,
+                        DetailLeggerTambahan = new DetailLeggerTambahan
+                        {
+                            KehadiranSakit = 0,
+                            KehadiranIzin = 0,
+                            KehadiranAlfa = 0,
+                            SikapSpiritual = "Baik",
+                            SikapSosial = "Baik",
+                            CatatanWaliKelas = "",
+                            DibuatPada = DateTime.UtcNow
+                        }
+                    });
+                }
+
                 _context.BukuInduks.Add(bukuInduk);
+
+                // Auto-create DetailIjazah for the alumni if it does not exist
+                var hasIjazah = await _context.DetailIjazahs.AnyAsync(di => di.AlumniId == alumni.Id);
+                if (!hasIjazah)
+                {
+                    var detailIjazah = new DetailIjazah
+                    {
+                        AlumniId = alumni.Id,
+                        NamaKepalaMadrasah = "Drs. H. Ahmad Fauzi, M.Pd.I",
+                        TanggalPenerbitan = DateTime.UtcNow,
+                        DibuatPada = DateTime.UtcNow,
+                        RataRataNilai = 0
+                    };
+                    _context.DetailIjazahs.Add(detailIjazah);
+                }
+
+                // Auto-create DetailSkl for the alumni if it does not exist
+                var hasSkl = await _context.DetailSkls.AnyAsync(ds => ds.AlumniId == alumni.Id);
+                if (!hasSkl)
+                {
+                    var detailSkl = new DetailSkl
+                    {
+                        AlumniId = alumni.Id,
+                        NomorPeserta = string.IsNullOrWhiteSpace(req.NomorSkhun) ? "-" : req.NomorSkhun,
+                        TanggalTerbit = DateTime.UtcNow,
+                        DibuatPada = DateTime.UtcNow,
+                        RataRataNilai = 0
+                    };
+                    _context.DetailSkls.Add(detailSkl);
+                }
+
                 addedCount++;
             }
 
@@ -304,17 +366,33 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // PUT: api/bukuinduk/5
         [HttpPut("{id}")]
+        [Authorize(Roles = "AdminSuper,Admin,Operator,Penulis")]
         public async Task<IActionResult> Update(int id, [FromBody] CreateBukuIndukRequest request)
         {
             var existing = await _context.BukuInduks
+                .Include(b => b.Alumni)
                 .Include(b => b.NilaiSemesters)
                     .ThenInclude(ns => ns.NilaiMataPelajarans)
+                .Include(b => b.NilaiSemesters)
+                    .ThenInclude(ns => ns.DetailLeggerTambahan)
                 .Include(b => b.Ekstrakurikulers)
                 .Include(b => b.PrestasiLombas)
                 .FirstOrDefaultAsync(b => b.Id == id);
 
             if (existing == null)
                 return NotFound(new { message = "Data buku induk tidak ditemukan" });
+
+            // Sync with related Alumni record
+            if (existing.Alumni != null)
+            {
+                existing.Alumni.Nisn = request.Nisn;
+                existing.Alumni.Nis = request.Nis;
+                existing.Alumni.FullName = request.NamaLengkap;
+                existing.Alumni.JenisKelamin = request.JenisKelamin;
+                existing.Alumni.TempatLahir = request.TempatLahir;
+                existing.Alumni.GraduationYear = int.TryParse(request.TahunLulus, out var yr) ? yr : 0;
+                existing.Alumni.Address = request.AlamatOrangTua;
+            }
 
             // Update scalar fields
             existing.Nis = request.Nis;
@@ -343,7 +421,8 @@ namespace AlumniSmartArchive.Backend.Controllers
             existing.TahunLulus = request.TahunLulus;
             existing.NomorIjazah = request.NomorIjazah;
             existing.NomorSkhun = request.NomorSkhun;
-            existing.StatusKelulusan = request.StatusKelulusan;
+            existing.StatusSiswa = request.StatusSiswa;
+            existing.KeteranganStatus = request.KeteranganStatus;
             existing.EmailAlumni = request.EmailAlumni;
             existing.NomorHpAlumni = request.NomorHpAlumni;
             existing.PekerjaanSekarang = request.PekerjaanSekarang;
@@ -355,7 +434,11 @@ namespace AlumniSmartArchive.Backend.Controllers
             // Replace child collections
             if (request.NilaiSemester != null)
             {
-                // Remove old
+                // Remove old (including legger tambahan)
+                _context.DetailLeggerTambahans.RemoveRange(
+                    existing.NilaiSemesters
+                        .Where(ns => ns.DetailLeggerTambahan != null)
+                        .Select(ns => ns.DetailLeggerTambahan!));
                 _context.NilaiMataPelajarans.RemoveRange(
                     existing.NilaiSemesters.SelectMany(ns => ns.NilaiMataPelajarans));
                 _context.NilaiSemesters.RemoveRange(existing.NilaiSemesters);
@@ -418,11 +501,14 @@ namespace AlumniSmartArchive.Backend.Controllers
 
         // DELETE: api/bukuinduk/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "AdminSuper,Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var record = await _context.BukuInduks
                 .Include(b => b.NilaiSemesters)
                     .ThenInclude(ns => ns.NilaiMataPelajarans)
+                .Include(b => b.NilaiSemesters)
+                    .ThenInclude(ns => ns.DetailLeggerTambahan)
                 .Include(b => b.Ekstrakurikulers)
                 .Include(b => b.PrestasiLombas)
                 .FirstOrDefaultAsync(b => b.Id == id);
@@ -430,7 +516,11 @@ namespace AlumniSmartArchive.Backend.Controllers
             if (record == null)
                 return NotFound(new { message = "Data buku induk tidak ditemukan" });
 
-            // Remove children first
+            // Remove children first (including legger tambahan)
+            _context.DetailLeggerTambahans.RemoveRange(
+                record.NilaiSemesters
+                    .Where(ns => ns.DetailLeggerTambahan != null)
+                    .Select(ns => ns.DetailLeggerTambahan!));
             _context.NilaiMataPelajarans.RemoveRange(
                 record.NilaiSemesters.SelectMany(ns => ns.NilaiMataPelajarans));
             _context.NilaiSemesters.RemoveRange(record.NilaiSemesters);
@@ -505,6 +595,8 @@ namespace AlumniSmartArchive.Backend.Controllers
                         Nilai = mp.Nilai
                     }).ToList() ?? new()
                 }).ToList() ?? new(),
+                // Legacy field kept for backward compatibility
+                // LeggerTambahan is now embedded in NilaiSemesterFullDto
                 RataRata = b.RataRata,
                 PrestasiAkademik = b.PrestasiAkademik,
                 Ekskul = b.Ekstrakurikulers?.Select(e => new EkskulDto
@@ -524,15 +616,107 @@ namespace AlumniSmartArchive.Backend.Controllers
                 TahunLulus = b.TahunLulus,
                 NomorIjazah = b.NomorIjazah,
                 NomorSkhun = b.NomorSkhun,
-                StatusKelulusan = b.StatusKelulusan,
+                StatusSiswa = b.StatusSiswa,
+                KeteranganStatus = b.KeteranganStatus,
                 EmailAlumni = b.EmailAlumni,
                 NomorHpAlumni = b.NomorHpAlumni,
                 PekerjaanSekarang = b.PekerjaanSekarang,
                 PerguruanTinggi = b.PerguruanTinggi,
                 AlamatSekarang = b.AlamatSekarang,
                 StatusArsip = b.StatusArsip,
-                Foto = b.Foto
+                Foto = b.Foto,
+                NilaiSemesterFull = b.NilaiSemesters?.Select(ns => new NilaiSemesterFullDto
+                {
+                    Id = ns.Id,
+                    Semester = ns.Semester,
+                    Rata = ns.RataRata,
+                    MataPelajaran = ns.NilaiMataPelajarans?.Select(mp => new NilaiMapelDto
+                    {
+                        Nama = mp.NamaMapel,
+                        Nilai = mp.Nilai
+                    }).ToList() ?? new(),
+                    LeggerTambahan = ns.DetailLeggerTambahan == null ? null : new DetailLeggerTambahanDto
+                    {
+                        Id = ns.DetailLeggerTambahan.Id,
+                        NilaiSemesterId = ns.DetailLeggerTambahan.NilaiSemesterId,
+                        KehadiranSakit = ns.DetailLeggerTambahan.KehadiranSakit,
+                        KehadiranIzin = ns.DetailLeggerTambahan.KehadiranIzin,
+                        KehadiranAlfa = ns.DetailLeggerTambahan.KehadiranAlfa,
+                        SikapSpiritual = ns.DetailLeggerTambahan.SikapSpiritual,
+                        SikapSosial = ns.DetailLeggerTambahan.SikapSosial,
+                        CatatanWaliKelas = ns.DetailLeggerTambahan.CatatanWaliKelas
+                    }
+                }).ToList() ?? new()
             };
+        }
+
+        // ── DetailLeggerTambahan Endpoints ──
+
+        // GET: api/bukuinduk/legger/{nilaiSemesterId}
+        [HttpGet("legger/{nilaiSemesterId}")]
+        public async Task<IActionResult> GetLegger(int nilaiSemesterId)
+        {
+            var legger = await _context.DetailLeggerTambahans
+                .FirstOrDefaultAsync(l => l.NilaiSemesterId == nilaiSemesterId);
+
+            if (legger == null)
+                return Ok(null);
+
+            return Ok(new DetailLeggerTambahanDto
+            {
+                Id = legger.Id,
+                NilaiSemesterId = legger.NilaiSemesterId,
+                KehadiranSakit = legger.KehadiranSakit,
+                KehadiranIzin = legger.KehadiranIzin,
+                KehadiranAlfa = legger.KehadiranAlfa,
+                SikapSpiritual = legger.SikapSpiritual,
+                SikapSosial = legger.SikapSosial,
+                CatatanWaliKelas = legger.CatatanWaliKelas
+            });
+        }
+
+        // POST/PUT: api/bukuinduk/legger (upsert)
+        [HttpPost("legger")]
+        [Authorize(Roles = "AdminSuper,Admin,Operator,Penulis")]
+        public async Task<IActionResult> UpsertLegger([FromBody] DetailLeggerTambahanDto request)
+        {
+            // Verify NilaiSemester exists
+            var semester = await _context.NilaiSemesters.FindAsync(request.NilaiSemesterId);
+            if (semester == null)
+                return BadRequest(new { message = "Data semester tidak ditemukan" });
+
+            var existing = await _context.DetailLeggerTambahans
+                .FirstOrDefaultAsync(l => l.NilaiSemesterId == request.NilaiSemesterId);
+
+            if (existing == null)
+            {
+                // Create
+                existing = new DetailLeggerTambahan
+                {
+                    NilaiSemesterId = request.NilaiSemesterId,
+                    KehadiranSakit = request.KehadiranSakit,
+                    KehadiranIzin = request.KehadiranIzin,
+                    KehadiranAlfa = request.KehadiranAlfa,
+                    SikapSpiritual = request.SikapSpiritual,
+                    SikapSosial = request.SikapSosial,
+                    CatatanWaliKelas = request.CatatanWaliKelas,
+                    DibuatPada = DateTime.UtcNow
+                };
+                _context.DetailLeggerTambahans.Add(existing);
+            }
+            else
+            {
+                // Update
+                existing.KehadiranSakit = request.KehadiranSakit;
+                existing.KehadiranIzin = request.KehadiranIzin;
+                existing.KehadiranAlfa = request.KehadiranAlfa;
+                existing.SikapSpiritual = request.SikapSpiritual;
+                existing.SikapSosial = request.SikapSosial;
+                existing.CatatanWaliKelas = request.CatatanWaliKelas;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Data legger tambahan berhasil disimpan", id = existing.Id });
         }
     }
 }

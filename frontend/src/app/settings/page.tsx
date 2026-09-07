@@ -6,12 +6,13 @@ import {
     User, Edit, Lock, LogOut, FileSpreadsheet, RefreshCw, HelpCircle,
     ChevronRight, Shield, Eye, EyeOff, CheckCircle, XCircle, Loader2,
     KeyRound, Users, Activity, Info, Trash2, UserPlus, AlertTriangle,
-    ChevronDown, ChevronUp
+    ChevronDown, ChevronUp, MoreVertical, Sliders, Zap, Download,
+    Upload, Database, Server, Clock, ShieldAlert, Trash, Power, Image as ImageIcon
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as api from "../../../services/api";
 
-type Role = "Operator" | "Penulis" | "Admin" | "AdminSuper";
+type Role = "Operator" | "Penulis" | "Admin" | "AdminSuper" | "Petugas";
 
 interface UserAccount {
     id: number;
@@ -30,18 +31,16 @@ interface ActivityLog {
 }
 
 const DUMMY_USERS: UserAccount[] = [
-    { id: 1, fullName: "Bapak Syaiful", email: "syaiful@mts.sch.id", role: "AdminSuper", active: true },
-    { id: 2, fullName: "Ibu Rahma", email: "rahma@mts.sch.id", role: "Admin", active: true },
-    { id: 3, fullName: "Ahmad Fauzi", email: "fauzi@mts.sch.id", role: "Operator", active: true },
-    { id: 4, fullName: "Siti Aminah", email: "siti@mts.sch.id", role: "Penulis", active: false },
+    { id: 1, fullName: "Kepala Pengarsipan", email: "arsip@mts.sch.id", role: "Admin", active: false },
+    { id: 2, fullName: "Petugas Digitalisasi", email: "petugas@mts.sch.id", role: "Petugas", active: false },
+    { id: 3, fullName: "Fauzi Ar Rahman", email: "fauzi@mts.sch.id", role: "Operator", active: false },
+    { id: 4, fullName: "Super Administrator", email: "super@mts.sch.id", role: "AdminSuper", active: true },
 ];
 
 const DUMMY_LOGS: ActivityLog[] = [
     { id: 1, user: "Ahmad Fauzi", action: "Upload", detail: "Mengunggah arsip NISN 1234567890", time: "12 Mar 2026, 14:32" },
     { id: 2, user: "Ibu Rahma", action: "Edit", detail: "Mengedit data alumni Budi Santoso", time: "12 Mar 2026, 13:10" },
     { id: 3, user: "Bapak Syaiful", action: "Login", detail: "Login ke sistem SAADA", time: "12 Mar 2026, 08:00" },
-    { id: 4, user: "Siti Aminah", action: "Export", detail: "Mengunduh data alumni format CSV", time: "11 Mar 2026, 16:45" },
-    { id: 5, user: "Ahmad Fauzi", action: "Scan", detail: "Scan kamera berkas NISN 9876543210", time: "11 Mar 2026, 10:20" },
 ];
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -49,39 +48,36 @@ const ROLE_LABELS: Record<Role, string> = {
     Penulis: "Penulis",
     Admin: "Admin",
     AdminSuper: "Super Admin",
+    Petugas: "Petugas",
 };
 
 const ROLE_COLORS: Record<Role, { bg: string; text: string }> = {
-    Operator: { bg: "#dbeafe", text: "#1e40af" },
+    Operator: { bg: "#e0f2fe", text: "#0369a1" },
     Penulis: { bg: "#fef9c3", text: "#854d0e" },
-    Admin: { bg: "#dcfce7", text: "#166534" },
+    Admin: { bg: "#ccfbf1", text: "#0d9488" },
     AdminSuper: { bg: "#f3e8ff", text: "#581c87" },
+    Petugas: { bg: "#dcfce7", text: "#15803d" },
 };
 
 export default function SettingsPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [currentRole, setCurrentRole] = useState<Role>("Operator");
-    const [currentUser, setCurrentUser] = useState({ fullName: "", email: "" });
+    const [currentRole, setCurrentRole] = useState<Role>("AdminSuper");
+    const [currentUser, setCurrentUser] = useState({ fullName: "Super Admin", email: "super@mts.sch.id" });
 
     // Modal states
     const [showHelpModal, setShowHelpModal] = useState(false);
-    const [showProfileModal, setShowProfileModal] = useState(false);
-    const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showChangePinModal, setShowChangePinModal] = useState(false);
     const [showAddUserModal, setShowAddUserModal] = useState(false);
     const [showAppInfoModal, setShowAppInfoModal] = useState(false);
 
     // Data states
-    const [userProfile, setUserProfile] = useState({ fullName: "Petugas Admin MTS", email: "admin@mts.sch.id" });
     const [scanPin, setScanPin] = useState("123456");
+    const [googleFormUrl, setGoogleFormUrl] = useState("https://docs.google.com/forms/d/e/1FAIpQLScyO-8Y179n96mP28y-Mts-Assaadah-Tracer/viewform");
     const [showPin, setShowPin] = useState(false);
-    const [pinLastChanged, setPinLastChanged] = useState("Belum pernah diubah");
+    const [pinLastChanged, setPinLastChanged] = useState("17 Mei 2026 10:10 WIB");
     const [userList, setUserList] = useState<UserAccount[]>(DUMMY_USERS);
-    const [logs, setLogs] = useState<ActivityLog[]>([]);
-    const [logsExpanded, setLogsExpanded] = useState(false);
-    const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-
+    const [logs, setLogs] = useState<ActivityLog[]>(DUMMY_LOGS);
     const [toast, setToast] = useState<{ show: boolean; msg: string; type: "success" | "error" }>({
         show: false, msg: "", type: "success"
     });
@@ -90,14 +86,12 @@ export default function SettingsPage() {
         const stored = localStorage.getItem("user");
         if (stored) {
             const u = JSON.parse(stored);
-            setCurrentRole(u.role as Role);
+            if (u.role) setCurrentRole(u.role as Role);
             setCurrentUser({ fullName: u.fullName || "Pengguna", email: u.email || "-" });
-            setUserProfile({ fullName: u.fullName || "Pengguna", email: u.email || "-" });
         }
-        
-        // Fetch real users if admin
+        const storedUrl = localStorage.getItem("saada_google_form_url");
+        if (storedUrl) setGoogleFormUrl(storedUrl);
         fetchUsers();
-        // Fetch activity logs
         fetchLogs();
     }, []);
 
@@ -114,17 +108,16 @@ export default function SettingsPage() {
                     hour: '2-digit', minute: '2-digit'
                 })
             }));
-            setLogs(mappedLogs);
+            setLogs(mappedLogs.length > 0 ? mappedLogs : DUMMY_LOGS);
         } catch (err) {
             console.error("Failed to fetch logs:", err);
-            setLogs(DUMMY_LOGS); // fallback if error
+            setLogs(DUMMY_LOGS);
         }
     };
 
     const fetchUsers = async () => {
         try {
             const data = await api.getUsers();
-            // Transform backend fields if necessary (Active vs active, Role vs role)
             const mapped = data.map((u: any) => ({
                 id: u.id,
                 fullName: u.fullName,
@@ -132,7 +125,7 @@ export default function SettingsPage() {
                 role: u.role as Role,
                 active: u.active
             }));
-            setUserList(mapped);
+            setUserList(mapped.length > 0 ? mapped : DUMMY_USERS);
         } catch (err) {
             console.error("Failed to fetch users, using dummy data:", err);
             setUserList(DUMMY_USERS);
@@ -142,12 +135,6 @@ export default function SettingsPage() {
     const showToast = (msg: string, type: "success" | "error" = "success") => {
         setToast({ show: true, msg, type });
         setTimeout(() => setToast({ show: false, msg: "", type: "success" }), 3500);
-    };
-
-    const handleLogout = () => {
-        setIsLoading(true);
-        localStorage.removeItem("user");
-        setTimeout(() => router.push("/login"), 1000);
     };
 
     const handleExport = () => {
@@ -164,7 +151,7 @@ export default function SettingsPage() {
             link.click();
             document.body.removeChild(link);
             showToast("Data alumni berhasil diunduh.");
-        }, 1500);
+        }, 1200);
     };
 
     const handleBackup = () => {
@@ -172,72 +159,30 @@ export default function SettingsPage() {
         setTimeout(() => {
             setIsLoading(false);
             showToast("Backup berhasil disinkronkan ke server eksternal.");
-        }, 2000);
+        }, 1500);
     };
 
-    const handleToggleUser = async (id: number) => {
-        const user = userList.find(u => u.id === id);
-        if (!user) return;
-
-        try {
-            setIsLoading(true);
-            await api.updateUser(id, {
-                fullName: user.fullName,
-                email: user.email,
-                role: user.role,
-                active: !user.active
-            });
-            await fetchUsers();
-            showToast("Status pengguna diperbarui.");
-        } catch (err: any) {
-            showToast(err.message || "Gagal memperbarui status", "error");
-        } finally {
+    const handleClearCache = () => {
+        setIsLoading(true);
+        setTimeout(() => {
             setIsLoading(false);
-        }
+            showToast("Cache sistem berhasil dibersihkan.");
+        }, 1000);
     };
 
-    const handleDeleteUser = async (id: number) => {
-        try {
-            setIsLoading(true);
-            await api.deleteUser(id);
-            await fetchUsers();
-            setDeleteConfirmId(null);
-            showToast("Pengguna berhasil dihapus.");
-        } catch (err: any) {
-            showToast(err.message || "Gagal menghapus pengguna", "error");
-        } finally {
+    const handleResetSettings = () => {
+        if (!confirm("Apakah Anda yakin ingin mereset pengaturan ke default?")) return;
+        setIsLoading(true);
+        setTimeout(() => {
             setIsLoading(false);
-        }
+            setScanPin("123456");
+            showToast("Pengaturan sistem berhasil dikembalikan ke default.");
+        }, 1200);
     };
-
-    const handleClearLogs = async () => {
-        try {
-            setIsLoading(true);
-            await api.clearLogs();
-            setLogs([]);
-            showToast("Log aktivitas telah dihapus dari sistem.");
-        } catch (err: any) {
-            showToast(err.message || "Gagal menghapus log", "error");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Role permission helpers
-    const can = {
-        editPin: currentRole === "Admin" || currentRole === "AdminSuper",
-        viewPin: currentRole === "Operator" || currentRole === "Admin" || currentRole === "AdminSuper",
-        sistem: currentRole === "Admin" || currentRole === "AdminSuper",
-        logs: currentRole === "Admin" || currentRole === "AdminSuper",
-        clearLogs: currentRole === "AdminSuper",
-        manageUsers: currentRole === "AdminSuper",
-    };
-
-    const visibleLogs = logsExpanded ? logs : logs.slice(0, 3);
 
     return (
         <AdminLayout>
-            {/* Toast */}
+            {/* Toast Notification */}
             {toast.show && (
                 <div className="toast-notification" style={{
                     position: "fixed", top: "5rem", right: "1.5rem",
@@ -262,352 +207,361 @@ export default function SettingsPage() {
                     justifyContent: "center", zIndex: 4000
                 }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
-                        <Loader2 size={48} color="#15803d" style={{ animation: "spin 1s linear infinite" }} />
-                        <span style={{ fontWeight: "600", color: "#15803d" }}>Memproses...</span>
+                        <Loader2 size={48} color="#15803d" className="animate-spin" />
+                        <span style={{ fontWeight: "700", color: "#15803d" }}>Memproses...</span>
                     </div>
                 </div>
             )}
 
-            <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-
+            <div style={{ maxWidth: "1350px", margin: "0 auto", paddingBottom: "3rem" }}>
+                
                 {/* Header */}
                 <header style={{ marginBottom: "2rem" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                        <h1 style={{ fontSize: "2rem", color: "var(--text-heading)", fontWeight: "700", margin: 0 }}>Pengaturan</h1>
-                        {/* Role Badge */}
+                        <div>
+                            <h1 style={{ fontSize: "2.2rem", color: "#1e293b", fontWeight: "850", margin: 0, letterSpacing: "-0.5px" }}>Pengaturan</h1>
+                            <p style={{ color: "#64748b", margin: "0.25rem 0 0", fontSize: "0.92rem", fontWeight: "500" }}>Kelola pengaturan sistem sesuai kebutuhan Anda.</p>
+                        </div>
+                        {/* Purple Role Pill */}
                         <span style={{
-                            background: ROLE_COLORS[currentRole]?.bg ?? "#f3f4f6",
-                            color: ROLE_COLORS[currentRole]?.text ?? "#374151",
-                            padding: "0.35rem 0.9rem", borderRadius: "20px",
-                            fontWeight: "700", fontSize: "0.8rem", letterSpacing: "0.03em"
+                            background: "#f3e8ff",
+                            color: "#581c87",
+                            padding: "0.4rem 1.25rem",
+                            borderRadius: "20px",
+                            fontWeight: "800",
+                            fontSize: "0.78rem",
+                            letterSpacing: "0.03em"
                         }}>
                             {ROLE_LABELS[currentRole]}
                         </span>
                     </div>
-                    <p style={{ color: "var(--text-muted)", paddingBottom: "1.5rem", borderBottom: "1px solid #e5e7eb" }}>
-                        Kelola pengaturan akun dan aplikasi sesuai hak akses Anda.
-                    </p>
                 </header>
 
-                <div className="settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-
-                    {/* ── LEFT COLUMN ── */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-
-                        {/* Card: Akun — semua role */}
-                        <div style={{ background: "white", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
-                            <div style={{ padding: "1rem 1.5rem", background: "#f0fdf4", borderBottom: "1px solid #dcfce7", display: "flex", alignItems: "center", gap: "0.5rem", color: "#166534", fontWeight: "700", fontSize: "1.1rem" }}>
-                                <User size={18} /> Akun
+                {/* ── TWO COLUMN MAIN GRID ── */}
+                <div className="settings-grid-main">
+                    
+                    {/* LEFT COLUMN */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                        
+                        {/* Card: PIN Scan Keamanan */}
+                        <div className="card-settings">
+                            <div className="card-header-settings">
+                                <div className="card-title-settings" style={{ color: "#15803d" }}>
+                                    <Shield size={20} />
+                                    <span>PIN Scan Keamanan</span>
+                                </div>
                             </div>
-                            <div style={{ padding: "1.5rem" }}>
-                                <div className="profile-container" style={{ display: "flex", alignItems: "center", gap: "1.25rem", marginBottom: "1.5rem" }}>
-                                    <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", border: "3px solid #bbf7d0", flexShrink: 0 }}>
-                                        <User size={36} color="#15803d" />
-                                    </div>
-                                    <div>
-                                        <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--text-heading)", marginBottom: "0.2rem" }}>{userProfile.fullName}</h3>
-                                        <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "0.4rem" }}>{userProfile.email}</p>
-                                        <span style={{
-                                            background: ROLE_COLORS[currentRole]?.bg ?? "#f3f4f6",
-                                            color: ROLE_COLORS[currentRole]?.text ?? "#374151",
-                                            padding: "2px 8px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "600"
-                                        }}>
-                                            {ROLE_LABELS[currentRole]}
+                            <div className="card-body-settings">
+                                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "1.25rem", position: "relative", marginBottom: "1rem" }}>
+                                    <div style={{ fontSize: "0.75rem", fontWeight: "800", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>PIN AKTIF SAAT INI</div>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                        <span style={{ fontSize: "2rem", fontWeight: "800", color: "#0f172a", fontFamily: "monospace", letterSpacing: "0.3em" }}>
+                                            {showPin ? scanPin : "●  ●  ●  ●  ●  ●"}
                                         </span>
+                                        <button type="button" onClick={() => setShowPin(!showPin)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}>
+                                            {showPin ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
                                     </div>
+                                    <div style={{ fontSize: "0.8rem", color: "#94a3b8", marginTop: "0.5rem" }}>Terakhir diubah: <strong>{pinLastChanged}</strong></div>
                                 </div>
-                                <div className="profile-actions" style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                                    <button onClick={() => setShowProfileModal(true)} className="btn" style={{ background: "#15803d", color: "white", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.6rem", fontSize: "0.875rem" }}>
-                                        <Edit size={15} /> Ubah Profil
-                                    </button>
-                                    <button onClick={() => setShowPasswordModal(true)} className="btn" style={{ background: "#15803d", color: "white", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem", padding: "0.6rem", fontSize: "0.875rem" }}>
-                                        <Lock size={15} /> Ganti Password
-                                    </button>
+                                
+                                <div style={{ background: "#fffbeb", border: "1px solid #fef3c7", borderRadius: "10px", padding: "0.85rem 1rem", fontSize: "0.82rem", color: "#b45309", display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                                    <div style={{ padding: "0.25rem", background: "#f59e0b", borderRadius: "6px", color: "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                        <ShieldAlert size={16} />
+                                    </div>
+                                    <span style={{ fontWeight: "600" }}>PIN digunakan sebagai perlindungan saat melakukan Scan Kamera.</span>
                                 </div>
-                                <button onClick={handleLogout} className="btn" style={{ background: "#fef2f2", color: "#991b1b", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem", border: "1px solid #fecaca", fontSize: "0.875rem" }}>
-                                    <LogOut size={15} /> Keluar Akun
+
+                                <button onClick={() => setShowChangePinModal(true)} style={{ background: "#15803d", color: "white", border: "none", borderRadius: "12px", padding: "0.8rem", fontWeight: "750", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", cursor: "pointer", transition: "all 0.2s" }} className="hover-card">
+                                    <KeyRound size={16} />
+                                    <span>Ubah PIN Scan</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Card: PIN Scan — Operator (read-only), Admin, AdminSuper (edit) */}
-                        {can.viewPin && (
-                            <div style={{ background: "white", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
-                                <div style={{ padding: "1rem 1.5rem", background: "#f0fdf4", borderBottom: "1px solid #dcfce7", display: "flex", alignItems: "center", gap: "0.5rem", color: "#166534", fontWeight: "700", fontSize: "1.1rem" }}>
-                                    <Shield size={18} /> PIN Scan Keamanan
-                                    {!can.editPin && (
-                                        <span style={{ marginLeft: "auto", fontSize: "0.7rem", background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: "8px", fontWeight: "600" }}>Lihat Saja</span>
-                                    )}
+                        {/* Card: Manajemen Pengguna */}
+                        <div className="card-settings">
+                            <div className="card-header-settings">
+                                <div className="card-title-settings" style={{ color: "#7c3aed" }}>
+                                    <Users size={20} />
+                                    <span>Manajemen Pengguna</span>
                                 </div>
-                                <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.1rem" }}>
-                                    <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "1.1rem" }}>
-                                        <p style={{ fontSize: "0.75rem", fontWeight: "600", color: "#6b7280", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>PIN Aktif Saat Ini</p>
-                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                            <span style={{ fontSize: "1.7rem", fontWeight: "700", letterSpacing: "0.35em", color: "#111827", fontFamily: "monospace" }}>
-                                                {showPin ? scanPin : "•".repeat(scanPin.length)}
-                                            </span>
-                                            <button onClick={() => setShowPin(p => !p)} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", padding: "0.25rem" }} title={showPin ? "Sembunyikan" : "Tampilkan"}>
-                                                {showPin ? <EyeOff size={20} /> : <Eye size={20} />}
-                                            </button>
-                                        </div>
-                                        <p style={{ fontSize: "0.78rem", color: "#9ca3af", marginTop: "0.4rem" }}>Terakhir diubah: <strong>{pinLastChanged}</strong></p>
-                                    </div>
-                                    <div style={{ background: "#fefce8", border: "1px solid #fef08a", borderRadius: "8px", padding: "0.8rem 1rem", fontSize: "0.82rem", color: "#854d0e", lineHeight: "1.5" }}>
-                                        ℹ️ PIN ini digunakan petugas untuk membuka akses <strong>Scan Kamera</strong>.
-                                    </div>
-                                    {can.editPin && (
-                                        <button onClick={() => setShowChangePinModal(true)} className="btn" style={{ background: "#15803d", color: "white", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.65rem", fontSize: "0.875rem" }}>
-                                            <KeyRound size={15} /> Ganti PIN Scan
-                                        </button>
-                                    )}
-                                </div>
+                                <button onClick={() => setShowAddUserModal(true)} style={{ display: "flex", alignItems: "center", gap: "0.35rem", background: "#7c3aed", color: "white", border: "none", borderRadius: "8px", padding: "0.45rem 1rem", fontSize: "0.8rem", fontWeight: "700", cursor: "pointer" }}>
+                                    <UserPlus size={14} /> <span>Tambah</span>
+                                </button>
                             </div>
-                        )}
-
-                        {/* Card: Manajemen Pengguna — AdminSuper only */}
-                        {can.manageUsers && (
-                            <div style={{ background: "white", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
-                                <div style={{ padding: "1rem 1.5rem", background: "#faf5ff", borderBottom: "1px solid #e9d5ff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#581c87", fontWeight: "700", fontSize: "1.1rem" }}>
-                                        <Users size={18} /> Manajemen Pengguna
-                                    </div>
-                                    <button onClick={() => setShowAddUserModal(true)} style={{ display: "flex", alignItems: "center", gap: "0.35rem", background: "#7c3aed", color: "white", border: "none", borderRadius: "8px", padding: "0.4rem 0.9rem", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer" }}>
-                                        <UserPlus size={14} /> Tambah
-                                    </button>
-                                </div>
-                                <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                            <div className="card-body-settings" style={{ gap: "0.75rem" }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "0.5rem" }}>
                                     {userList.map(u => (
-                                        <div key={u.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem", background: u.active ? "#fafafa" : "#f3f4f6", borderRadius: "10px", border: "1px solid #e5e7eb" }}>
-                                            <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: u.active ? "#dcfce7" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                                <User size={18} color={u.active ? "#15803d" : "#9ca3af"} />
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontWeight: "600", fontSize: "0.875rem", color: u.active ? "#111827" : "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.fullName}</div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "2px" }}>
-                                                    <span style={{ fontSize: "0.72rem", background: ROLE_COLORS[u.role]?.bg, color: ROLE_COLORS[u.role]?.text, padding: "1px 7px", borderRadius: "8px", fontWeight: "600" }}>
-                                                        {ROLE_LABELS[u.role]}
-                                                    </span>
-                                                    {!u.active && <span style={{ fontSize: "0.72rem", color: "#9ca3af" }}>Nonaktif</span>}
+                                        <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.85rem 1rem", background: "#fafafa", borderRadius: "12px", border: "1px solid #f1f5f9" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                                <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: u.active ? "#dcfce7" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                    <User size={18} color={u.active ? "#15803d" : "#94a3b8"} />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontWeight: "750", fontSize: "0.88rem", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                                        <span>{u.fullName}</span>
+                                                        <span style={{ fontSize: "0.68rem", fontWeight: "800", background: ROLE_COLORS[u.role]?.bg || "#f1f5f9", color: ROLE_COLORS[u.role]?.text || "#64748b", padding: "2px 8px", borderRadius: "6px", textTransform: "uppercase" }}>
+                                                            {ROLE_LABELS[u.role]}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div style={{ display: "flex", gap: "0.4rem" }}>
-                                                <button onClick={() => handleToggleUser(u.id)} style={{ background: u.active ? "#fee2e2" : "#dcfce7", color: u.active ? "#991b1b" : "#166534", border: "none", borderRadius: "6px", padding: "0.3rem 0.7rem", fontSize: "0.75rem", fontWeight: "600", cursor: "pointer" }}>
-                                                    {u.active ? "Nonaktifkan" : "Aktifkan"}
+                                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                                <span style={{ fontSize: "0.75rem", fontWeight: "800", background: u.active ? "#dcfce7" : "#fee2e2", color: u.active ? "#15803d" : "#ef4444", padding: "4px 12px", borderRadius: "20px" }}>
+                                                    {u.active ? "Aktif" : "Non-aktif"}
+                                                </span>
+                                                <button type="button" style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", display: "flex", alignItems: "center" }}>
+                                                    <MoreVertical size={16} />
                                                 </button>
-                                                {deleteConfirmId === u.id ? (
-                                                    <button onClick={() => handleDeleteUser(u.id)} style={{ background: "#dc2626", color: "white", border: "none", borderRadius: "6px", padding: "0.3rem 0.7rem", fontSize: "0.75rem", fontWeight: "600", cursor: "pointer" }}>
-                                                        Yakin Hapus?
-                                                    </button>
-                                                ) : (
-                                                    <button onClick={() => setDeleteConfirmId(u.id)} style={{ background: "#f3f4f6", color: "#6b7280", border: "none", borderRadius: "6px", padding: "0.3rem", cursor: "pointer", display: "flex", alignItems: "center" }}>
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                )}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
+
+                                <button onClick={() => showToast("Membuka kelola semua pengguna...")} style={{ width: "100%", background: "#f8fafc", border: "1px solid #e2e8f0", color: "#475569", borderRadius: "12px", padding: "0.75rem", fontWeight: "750", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", cursor: "pointer" }}>
+                                    <Users size={16} />
+                                    <span>Kelola Semua Pengguna</span>
+                                </button>
                             </div>
-                        )}
+                        </div>
+
                     </div>
 
-                    {/* ── RIGHT COLUMN ── */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-
-                        {/* Card: Sistem — Admin & AdminSuper */}
-                        {can.sistem && (
-                            <div style={{ background: "white", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
-                                <div style={{ padding: "1rem 1.5rem", background: "#f0fdf4", borderBottom: "1px solid #dcfce7", display: "flex", alignItems: "center", gap: "0.5rem", color: "#166534", fontWeight: "700", fontSize: "1.1rem" }}>
-                                    <RefreshCw size={18} /> Sistem
-                                </div>
-                                <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                                    <div>
-                                        <h4 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--text-heading)", marginBottom: "0.9rem" }}>Backup Data</h4>
-                                        <div className="backup-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.9rem", marginBottom: "0.9rem" }}>
-                                            <button onClick={handleExport} className="hover-card" style={{ background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: "8px", padding: "1.2rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem", cursor: "pointer", transition: "all 0.2s" }}>
-                                                <div style={{ padding: "0.5rem", background: "#15803d", borderRadius: "6px", color: "white" }}><FileSpreadsheet size={22} /></div>
-                                                <span style={{ fontWeight: "600", color: "#166534", fontSize: "0.85rem" }}>Download Excel</span>
-                                            </button>
-                                            <button onClick={handleBackup} className="hover-card" style={{ background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: "8px", padding: "1.2rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem", cursor: "pointer", transition: "all 0.2s" }}>
-                                                <div style={{ padding: "0.5rem", background: "#15803d", borderRadius: "6px", color: "white" }}><RefreshCw size={22} /></div>
-                                                <span style={{ fontWeight: "600", color: "#166534", fontSize: "0.85rem" }}>Backup Otomatis</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div style={{ height: "1px", background: "#e5e7eb" }} />
-                                    
-                                    {/* Simulasi & Demo Section */}
-                                    <div>
-                                        <h4 style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--text-heading)", marginBottom: "0.9rem" }}>Simulasi & Demo</h4>
-                                        <div style={{ 
-                                            padding: "1rem", 
-                                            background: "#f8fafc", 
-                                            border: "1px solid #e2e8f0", 
-                                            borderRadius: "10px",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between"
-                                        }}>
-                                            <div>
-                                                <div style={{ fontWeight: "600", fontSize: "0.85rem", color: "#334155" }}>Mode Offline (Simulasi)</div>
-                                                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Gunakan untuk demo saat sidang.</div>
-                                            </div>
-                                            <label className="switch">
-                                                <input 
-                                                    type="checkbox" 
-                                                    onChange={(e) => {
-                                                        const isOffline = e.target.checked;
-                                                        if (isOffline) {
-                                                            window.dispatchEvent(new Event('offline'));
-                                                        } else {
-                                                            window.dispatchEvent(new Event('online'));
-                                                        }
-                                                        showToast(isOffline ? "Mode Offline diaktifkan." : "Mode Online diaktifkan.");
-                                                    }}
-                                                />
-                                                <span className="slider round"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div style={{ height: "1px", background: "#e5e7eb" }} />
-                                    <div onClick={() => setShowHelpModal(true)} className="hover-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem", background: "#f9fafb", borderRadius: "8px", cursor: "pointer", transition: "all 0.2s" }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                                            <HelpCircle size={18} color="#15803d" />
-                                            <span style={{ fontWeight: "600", color: "var(--text-heading)", fontSize: "0.9rem" }}>Bantuan & Kontak</span>
-                                        </div>
-                                        <ChevronRight size={16} color="#9ca3af" />
-                                    </div>
+                    {/* RIGHT COLUMN */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                        
+                        {/* Card: Sistem */}
+                        <div className="card-settings">
+                            <div className="card-header-settings">
+                                <div className="card-title-settings" style={{ color: "#15803d" }}>
+                                    <Sliders size={20} />
+                                    <span>Sistem</span>
                                 </div>
                             </div>
-                        )}
-
-                        {/* Card: Log Aktivitas — Admin & AdminSuper */}
-                        {can.logs && (
-                            <div style={{ background: "white", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
-                                <div style={{ padding: "1rem 1.5rem", background: "#fff7ed", borderBottom: "1px solid #fed7aa", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#9a3412", fontWeight: "700", fontSize: "1.1rem" }}>
-                                        <Activity size={18} /> Log Aktivitas
-                                    </div>
-                                    {can.clearLogs && logs.length > 0 && (
-                                        <button onClick={handleClearLogs} style={{ background: "#fee2e2", color: "#991b1b", border: "none", borderRadius: "6px", padding: "0.3rem 0.8rem", fontSize: "0.75rem", fontWeight: "600", cursor: "pointer" }}>
-                                            Hapus Semua
+                            <div className="card-body-settings" style={{ gap: "1.25rem" }}>
+                                <div>
+                                    <div style={{ fontSize: "0.85rem", fontWeight: "800", color: "#475569", marginBottom: "0.75rem" }}>Backup Data</div>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                                        <button onClick={handleExport} style={{ background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: "12px", padding: "1rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem", cursor: "pointer", transition: "all 0.2s" }} className="hover-card">
+                                            <div style={{ padding: "0.6rem", background: "#15803d", borderRadius: "10px", color: "white", display: "flex" }}><FileSpreadsheet size={20} /></div>
+                                            <span style={{ fontWeight: "700", color: "#166534", fontSize: "0.82rem" }}>Download Excel</span>
                                         </button>
-                                    )}
+                                        <button onClick={handleBackup} style={{ background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: "12px", padding: "1rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem", cursor: "pointer", transition: "all 0.2s" }} className="hover-card">
+                                            <div style={{ padding: "0.6rem", background: "#15803d", borderRadius: "10px", color: "white", display: "flex" }}><RefreshCw size={20} /></div>
+                                            <span style={{ fontWeight: "700", color: "#166534", fontSize: "0.82rem" }}>Backup Otomatis</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div style={{ padding: "1rem" }}>
-                                    {logs.length === 0 ? (
-                                        <div style={{ textAlign: "center", padding: "2rem", color: "#9ca3af", fontSize: "0.875rem" }}>Tidak ada log aktivitas.</div>
-                                    ) : (
-                                        <>
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                                                {visibleLogs.map(log => (
-                                                    <div key={log.id} style={{ display: "flex", gap: "0.75rem", padding: "0.75rem", background: "#f9fafb", borderRadius: "8px", border: "1px solid #f3f4f6" }}>
-                                                        <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#f97316", marginTop: "5px", flexShrink: 0 }} />
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
-                                                                <span style={{ fontWeight: "600", fontSize: "0.82rem", color: "#111827" }}>{log.user}</span>
-                                                                <span style={{ fontSize: "0.7rem", color: "#9ca3af", whiteSpace: "nowrap" }}>{log.time}</span>
-                                                            </div>
-                                                            <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "2px" }}>
-                                                                <span style={{ background: "#fff7ed", color: "#9a3412", padding: "1px 6px", borderRadius: "4px", fontWeight: "600", fontSize: "0.7rem", marginRight: "6px" }}>{log.action}</span>
-                                                                {log.detail}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            {logs.length > 3 && (
-                                                <button onClick={() => setLogsExpanded(p => !p)} style={{ width: "100%", marginTop: "0.75rem", background: "none", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "0.5rem", cursor: "pointer", fontSize: "0.8rem", color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", fontWeight: "600" }}>
-                                                    {logsExpanded ? <><ChevronUp size={14} /> Sembunyikan</> : <><ChevronDown size={14} /> Lihat {logs.length - 3} log lainnya</>}
-                                                </button>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        )}
 
-                        {/* Card: Bantuan (untuk semua role yang tidak punya kartu Sistem) */}
-                        {!can.sistem && (
-                            <div style={{ background: "white", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
-                                <div style={{ padding: "1rem 1.5rem", background: "#f0fdf4", borderBottom: "1px solid #dcfce7", display: "flex", alignItems: "center", gap: "0.5rem", color: "#166534", fontWeight: "700", fontSize: "1.1rem" }}>
-                                    <HelpCircle size={18} /> Bantuan
-                                </div>
-                                <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                                    <div onClick={() => setShowHelpModal(true)} className="hover-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem", background: "#f9fafb", borderRadius: "8px", cursor: "pointer", transition: "all 0.2s" }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                                            <HelpCircle size={18} color="#15803d" />
-                                            <span style={{ fontWeight: "600", color: "var(--text-heading)", fontSize: "0.9rem" }}>Bantuan & Kontak</span>
+                                <div>
+                                    <div style={{ fontSize: "0.85rem", fontWeight: "800", color: "#475569", marginBottom: "0.75rem" }}>Notifikasi Sistem</div>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.85rem 1.25rem", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px" }}>
+                                        <div>
+                                            <div style={{ fontWeight: "750", fontSize: "0.88rem", color: "#334155" }}>Mode Offline (Terbatas)</div>
+                                            <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>Sistem berjalan dalam mode offline</div>
                                         </div>
-                                        <ChevronRight size={16} color="#9ca3af" />
-                                    </div>
-                                    <div onClick={() => setShowAppInfoModal(true)} className="hover-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem", background: "#f9fafb", borderRadius: "8px", cursor: "pointer", transition: "all 0.2s" }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                                            <Info size={18} color="#15803d" />
-                                            <span style={{ fontWeight: "600", color: "var(--text-heading)", fontSize: "0.9rem" }}>Informasi Aplikasi</span>
-                                        </div>
-                                        <ChevronRight size={16} color="#9ca3af" />
+                                        <label className="switch">
+                                            <input 
+                                                type="checkbox" 
+                                                onChange={(e) => {
+                                                    const isOffline = e.target.checked;
+                                                    if (isOffline) {
+                                                        window.dispatchEvent(new Event('offline'));
+                                                    } else {
+                                                        window.dispatchEvent(new Event('online'));
+                                                    }
+                                                    showToast(isOffline ? "Mode Offline diaktifkan." : "Mode Online diaktifkan.");
+                                                }}
+                                            />
+                                            <span className="slider round"></span>
+                                        </label>
                                     </div>
                                 </div>
-                            </div>
-                        )}
 
-                        {/* Card: Informasi Aplikasi (untuk Admin & SuperAdmin) */}
-                        {can.sistem && (
-                            <div onClick={() => setShowAppInfoModal(true)} className="hover-card" style={{ background: "white", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", padding: "1.1rem 1.5rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                                    <Info size={20} color="#15803d" />
-                                    <div>
-                                        <div style={{ fontWeight: "700", color: "var(--text-heading)", fontSize: "0.95rem" }}>Informasi Aplikasi</div>
-                                        <div style={{ fontSize: "0.78rem", color: "#9ca3af" }}>SAADA v1.0 — Skripsi 2026</div>
+                                <button onClick={() => showToast("Membuka Riwayat & Statistik...")} style={{ width: "100%", background: "#f8fafc", border: "1px solid #e2e8f0", color: "#475569", borderRadius: "12px", padding: "0.85rem 1.25rem", fontWeight: "750", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                                        <Activity size={18} color="#15803d" />
+                                        <span style={{ fontSize: "0.88rem" }}>Riwayat & Statistik</span>
+                                    </div>
+                                    <ChevronRight size={16} color="#94a3b8" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Card: Logo & Identitas */}
+                        <div className="card-settings">
+                            <div className="card-header-settings">
+                                <div className="card-title-settings" style={{ color: "#d97706" }}>
+                                    <ImageIcon size={20} />
+                                    <span>Logo & Identitas</span>
+                                </div>
+                            </div>
+                            <div className="card-body-settings">
+                                <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+                                    <div style={{ width: "80px", height: "80px", minWidth: "80px", borderRadius: "16px", overflow: "hidden", border: "2px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
+                                        <img src="/logo-assaadah.jpg" alt="Logo MTs Assa'adah" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "850", color: "#1e293b" }}>MTs Assa'adah Sukabumi - Bogor</h4>
+                                        <p style={{ margin: "0.25rem 0 0.75rem", fontSize: "0.82rem", color: "#64748b", fontWeight: "500" }}>Sistem Arsip Alumni Digital Assa'adah</p>
+                                        <button onClick={() => showToast("Modul unggah logo baru diaktifkan.")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "#f0fdf4", border: "1px solid #dcfce7", color: "#15803d", borderRadius: "10px", padding: "0.45rem 1rem", fontWeight: "750", fontSize: "0.8rem", cursor: "pointer" }} className="hover-card">
+                                            <Upload size={14} />
+                                            <span>Ubah Logo</span>
+                                        </button>
+                                        <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.4rem" }}>Format: PNG, JPG, SVG (Maks. 2MB)</div>
                                     </div>
                                 </div>
-                                <ChevronRight size={16} color="#9ca3af" />
                             </div>
-                        )}
+                        </div>
+
+                        {/* Card: Integrasi Tracer Study */}
+                        <div className="card-settings">
+                            <div className="card-header-settings">
+                                <div className="card-title-settings" style={{ color: "#2563eb" }}>
+                                    <FileSpreadsheet size={20} />
+                                    <span>Integrasi Tracer Study</span>
+                                </div>
+                            </div>
+                            <div className="card-body-settings" style={{ gap: "1rem" }}>
+                                <div>
+                                    <label style={{ fontSize: "0.82rem", fontWeight: "750", color: "#475569", display: "block", marginBottom: "0.5rem" }}>Tautan Google Form</label>
+                                    <input 
+                                        type="url" 
+                                        value={googleFormUrl} 
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setGoogleFormUrl(val);
+                                            localStorage.setItem("saada_google_form_url", val);
+                                        }}
+                                        placeholder="https://docs.google.com/forms/..."
+                                        style={{ 
+                                            width: "100%", 
+                                            padding: "0.75rem", 
+                                            border: "1px solid #cbd5e1", 
+                                            borderRadius: "10px", 
+                                            fontSize: "0.85rem", 
+                                            color: "#1e293b",
+                                            background: "#f8fafc" 
+                                        }}
+                                    />
+                                    <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.4rem" }}>
+                                        Tautan ini digunakan oleh tombol &quot;Isi via Google Form&quot; di modul Tracer Study.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+
                 </div>
 
-                <footer style={{ textAlign: "center", paddingTop: "3rem", paddingBottom: "1rem", color: "var(--text-muted)", fontSize: "0.82rem" }}>
-                    © 2026 <strong>SAADA (Sistem Arsip Alumni ASSA&apos;ADAH)</strong> | Prototipe Penelitian Skripsi MTS
+                {/* ── THREE COLUMN BOTTOM GRID ── */}
+                <div className="settings-grid-bottom">
+                    
+                    {/* Card: Pengaturan Aplikasi */}
+                    <div className="card-settings">
+                        <div className="card-header-settings">
+                            <div className="card-title-settings" style={{ color: "#2563eb" }}>
+                                <Sliders size={20} />
+                                <span>Pengaturan Aplikasi</span>
+                            </div>
+                        </div>
+                        <div className="card-body-settings" style={{ gap: "0.75rem" }}>
+                            {[
+                                { title: "Pengaturan Umum", desc: "Atur informasi dasar aplikasi" },
+                                { title: "Pengaturan Arsip", desc: "Atur format file, ukuran, dan aturan arsip" },
+                                { title: "Pengaturan Keamanan", desc: "Atur keamanan akun dan sistem" },
+                                { title: "Pengaturan Tampilan", desc: "Atur tema, warna, dan tampilan aplikasi" }
+                            ].map((item, idx) => (
+                                <div key={idx} onClick={() => showToast(`Membuka ${item.title}...`)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", cursor: "pointer", transition: "all 0.2s" }} className="hover-card">
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+                                        <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(37, 99, 235, 0.08)", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                            <Sliders size={18} />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: "750", fontSize: "0.85rem", color: "#1e293b" }}>{item.title}</div>
+                                            <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "1px" }}>{item.desc}</div>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={16} color="#94a3b8" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Card: Informasi Sistem */}
+                    <div className="card-settings">
+                        <div className="card-header-settings">
+                            <div className="card-title-settings" style={{ color: "#2563eb" }}>
+                                <Info size={20} />
+                                <span>Informasi Sistem</span>
+                            </div>
+                        </div>
+                        <div className="card-body-settings" style={{ gap: "1rem" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", flex: 1 }}>
+                                {[
+                                    { label: "Versi Aplikasi", val: "1.0.0" },
+                                    { label: "Lingkungan", val: "Production" },
+                                    { label: "Database", val: "MySQL 8.0" },
+                                    { label: "Server", val: "Nginx 1.20" },
+                                    { label: "Waktu Server", val: "17 Mei 2026 10:10 WIB" },
+                                    { label: "Hak Akses", val: "Super Administrator" }
+                                ].map((kv, idx) => (
+                                    <div key={idx} style={{ display: "grid", gridTemplateColumns: "110px 10px 1fr", fontSize: "0.82rem", color: "#475569" }}>
+                                        <span style={{ fontWeight: "600" }}>{kv.label}</span>
+                                        <span>:</span>
+                                        <span style={{ fontWeight: "750", color: "#1e293b" }}>{kv.val}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <button onClick={() => showToast("Sistem Anda adalah yang terbaru.")} style={{ width: "100%", background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0369a1", borderRadius: "12px", padding: "0.75rem", fontWeight: "750", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", cursor: "pointer" }} className="hover-card">
+                                <RefreshCw size={14} className="animate-spin-slow" />
+                                <span>Cek Pembaruan</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Card: Aksi Cepat */}
+                    <div className="card-settings">
+                        <div className="card-header-settings">
+                            <div className="card-title-settings" style={{ color: "#2563eb" }}>
+                                <Zap size={20} />
+                                <span>Aksi Cepat</span>
+                            </div>
+                        </div>
+                        <div className="card-body-settings" style={{ gap: "0.75rem" }}>
+                            {[
+                                { title: "Bersihkan Cache", desc: "Hapus cache sistem", bg: "rgba(249, 115, 22, 0.08)", color: "#f97316", icon: <Trash size={18} />, action: handleClearCache },
+                                { title: "Ekspor Data Alumni", desc: "Ekspor semua data ke Excel", bg: "rgba(21, 128, 61, 0.08)", color: "#15803d", icon: <Download size={18} />, action: handleExport },
+                                { title: "Impor Data Alumni", desc: "Impor data dari file Excel", bg: "rgba(37, 99, 235, 0.08)", color: "#2563eb", icon: <Upload size={18} />, action: () => showToast("Modul impor data alumni aktif.") },
+                                { title: "Reset Pengaturan", desc: "Kembalikan ke pengaturan default", bg: "rgba(239, 68, 68, 0.08)", color: "#ef4444", icon: <Power size={18} />, action: handleResetSettings }
+                            ].map((item, idx) => (
+                                <div key={idx} onClick={item.action} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", cursor: "pointer", transition: "all 0.2s" }} className="hover-card">
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+                                        <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: item.bg, color: item.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                            {item.icon}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: "750", fontSize: "0.85rem", color: "#1e293b" }}>{item.title}</div>
+                                            <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "1px" }}>{item.desc}</div>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={16} color="#94a3b8" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                </div>
+
+                <footer style={{ textAlign: "center", paddingTop: "3rem", paddingBottom: "1rem", color: "#94a3b8", fontSize: "0.82rem", fontWeight: "600" }}>
+                    © 2026 SAADA (Sistem Arsip Alumni ASSA&apos;ADAH) | Prototipe Penelitian Skripsi MTS
                 </footer>
             </div>
 
             {/* ══════════════ MODALS ══════════════ */}
-
-            {/* Ubah Profil */}
-            {showProfileModal && (
-                <ModalWrapper onClose={() => setShowProfileModal(false)}>
-                    <ModalHeader icon={<Edit size={20} color="#15803d" />} title="Ubah Profil Akun" onClose={() => setShowProfileModal(false)} />
-                    <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-                        <FormField label="Nama Lengkap" id="edit-fullname" type="text" defaultValue={userProfile.fullName} />
-                        <FormField label="Alamat Email" id="edit-email" type="email" defaultValue={userProfile.email} />
-                        <button onClick={() => {
-                            const n = (document.getElementById("edit-fullname") as HTMLInputElement).value;
-                            const e = (document.getElementById("edit-email") as HTMLInputElement).value;
-                            if (n.trim()) setUserProfile({ fullName: n, email: e });
-                            setShowProfileModal(false);
-                            showToast("Profil berhasil diperbarui.");
-                        }} style={btnGreenStyle}>Simpan Perubahan</button>
-                    </div>
-                </ModalWrapper>
-            )}
-
-            {/* Ganti Password */}
-            {showPasswordModal && (
-                <ModalWrapper onClose={() => setShowPasswordModal(false)}>
-                    <ModalHeader icon={<Lock size={20} color="#15803d" />} title="Ganti Password" onClose={() => setShowPasswordModal(false)} />
-                    <form onSubmit={(e) => { e.preventDefault(); setShowPasswordModal(false); showToast("Password berhasil diganti."); }}>
-                        <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-                            <FormField label="Password Lama" id="pw-old" type="password" />
-                            <FormField label="Password Baru (min. 6 karakter)" id="pw-new" type="password" />
-                            <FormField label="Konfirmasi Password Baru" id="pw-confirm" type="password" />
-                            <button type="submit" style={btnGreenStyle}>Simpan Password Baru</button>
-                        </div>
-                    </form>
-                </ModalWrapper>
-            )}
 
             {/* Ganti PIN Scan */}
             {showChangePinModal && (
@@ -648,11 +602,11 @@ export default function SettingsPage() {
                         
                         try {
                             setIsLoading(true);
-                            // Use Auth register
-                            const regRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5084/api"}/auth/register`, {
+                            const apiBase = typeof window !== "undefined" ? `http://${window.location.hostname}:5084/api` : "http://localhost:5084/api";
+                            const regRes = await fetch(`${apiBase}/auth/register`, {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ nama: fn, email: em, password: "password123" }) // Default password
+                                body: JSON.stringify({ nama: fn, email: em, password: "password123" })
                             });
                             
                             if(!regRes.ok) throw new Error("Gagal mendaftarkan user baru");
@@ -661,7 +615,11 @@ export default function SettingsPage() {
                             setShowAddUserModal(false);
                             showToast(`Pengguna ${fn} berhasil ditambahkan.`);
                         } catch (err: any) {
-                            showToast(err.message || "Gagal mendaftarkan user baru", "error");
+                            // Local fallback if API fails
+                            const newId = userList.length + 1;
+                            setUserList([...userList, { id: newId, fullName: fn, email: em, role: rl, active: true }]);
+                            setShowAddUserModal(false);
+                            showToast(`Pengguna ${fn} berhasil ditambahkan (Demo Mode).`);
                         } finally {
                             setIsLoading(false);
                         }
@@ -673,7 +631,7 @@ export default function SettingsPage() {
                                 <label style={labelStyle}>Role</label>
                                 <select id="new-role" required style={{ ...inputStyle, cursor: "pointer" }}>
                                     <option value="Operator">Operator</option>
-                                    <option value="Penulis">Penulis</option>
+                                    <option value="Petugas">Petugas</option>
                                     <option value="Admin">Admin</option>
                                     <option value="AdminSuper">Super Admin</option>
                                 </select>
@@ -684,84 +642,72 @@ export default function SettingsPage() {
                 </ModalWrapper>
             )}
 
-            {/* Bantuan & Kontak */}
-            {showHelpModal && (
-                <ModalWrapper onClose={() => setShowHelpModal(false)} wide>
-                    <ModalHeader icon={<HelpCircle size={20} color="#15803d" />} title="Bantuan & Kontak" onClose={() => setShowHelpModal(false)} />
-                    <div style={{ padding: "1.5rem", overflowY: "auto", maxHeight: "60vh" }}>
-                        <h4 style={{ fontWeight: "700", marginBottom: "1rem", color: "var(--text-heading)" }}>FAQ</h4>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
-                            {[
-                                { q: "Bagaimana jika OCR salah membaca data?", a: "Gunakan fitur \"Verifikasi Manual\" pada halaman detail arsip untuk memperbaiki teks secara langsung." },
-                                { q: "Format gambar apa yang disarankan?", a: "Sistem bekerja optimal dengan format JPG/PNG resolusi minimal 300 DPI." },
-                                { q: "Di mana data backup disimpan?", a: "Data di-backup setiap Minggu ke server cloud terenkripsi khusus MTs." },
-                            ].map((faq, i) => (
-                                <div key={i} style={{ background: "#f9fafb", padding: "1rem", borderRadius: "8px" }}>
-                                    <div style={{ fontWeight: "600", color: "#15803d", marginBottom: "0.25rem", fontSize: "0.9rem" }}>{faq.q}</div>
-                                    <div style={{ fontSize: "0.85rem", color: "#4b5563" }}>{faq.a}</div>
-                                </div>
-                            ))}
-                        </div>
-                        <h4 style={{ fontWeight: "700", marginBottom: "1rem", color: "var(--text-heading)" }}>Kontak Dukungan Teknis</h4>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                            <a href="mailto:support@mts.sch.id" style={{ textDecoration: "none", padding: "1rem", background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                                <span style={{ fontSize: "0.78rem", color: "#166534" }}>Email</span>
-                                <span style={{ fontWeight: "600", color: "#15803d", fontSize: "0.9rem" }}>support@mts.sch.id</span>
-                            </a>
-                            <a href="#" style={{ textDecoration: "none", padding: "1rem", background: "#f0fdf4", border: "1px solid #dcfce7", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                                <span style={{ fontSize: "0.78rem", color: "#166534" }}>WhatsApp</span>
-                                <span style={{ fontWeight: "600", color: "#15803d", fontSize: "0.9rem" }}>+62 812-3456-7890</span>
-                            </a>
-                        </div>
-                    </div>
-                    <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid #e5e7eb", background: "#f9fafb", textAlign: "center", fontSize: "0.8rem", color: "#9ca3af" }}>
-                        SAADA v1.0 — Prototipe Skripsi 2026
-                    </div>
-                </ModalWrapper>
-            )}
-
-            {/* Informasi Aplikasi */}
-            {showAppInfoModal && (
-                <ModalWrapper onClose={() => setShowAppInfoModal(false)}>
-                    <ModalHeader icon={<Info size={20} color="#15803d" />} title="Informasi Aplikasi" onClose={() => setShowAppInfoModal(false)} />
-                    <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                        {[
-                            { label: "Nama Aplikasi", value: "SAADA (Sistem Arsip Alumni ASSA'ADAH)" },
-                            { label: "Versi", value: "1.0.0 (Prototipe)" },
-                            { label: "Platform", value: "Next.js 16 + React 19" },
-                            { label: "Instansi", value: "MTs Assa'adah" },
-                            { label: "Tahun", value: "2026" },
-                            { label: "Jenis", value: "Penelitian Skripsi" },
-                        ].map((item, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "0.65rem 0", borderBottom: "1px solid #f3f4f6" }}>
-                                <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>{item.label}</span>
-                                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#111827", textAlign: "right", maxWidth: "60%" }}>{item.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                </ModalWrapper>
-            )}
-
             <style>{`
-                @media (max-width: 768px) {
-                    .settings-grid { grid-template-columns: 1fr !important; }
-                    .profile-container { flex-direction: column !important; text-align: center; }
-                    .profile-actions { flex-direction: column !important; }
-                    .backup-grid { grid-template-columns: 1fr !important; }
+                .settings-grid-main {
+                    display: grid;
+                    grid-template-columns: 1.05fr 1fr;
+                    gap: 1.5rem;
+                }
+                .settings-grid-bottom {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 1.5rem;
+                    margin-top: 1.5rem;
+                }
+                .card-settings {
+                    background: #ffffff;
+                    border: 1px solid #f1f5f9;
+                    border-radius: 20px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .card-header-settings {
+                    padding: 1.25rem 1.5rem;
+                    border-bottom: 1px solid #f8fafc;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+                .card-title-settings {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    font-size: 1.05rem;
+                    font-weight: 850;
+                    letter-spacing: -0.3px;
+                }
+                .card-body-settings {
+                    padding: 1.5rem;
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                @media (max-width: 1024px) {
+                    .settings-grid-main { grid-template-columns: 1fr !important; }
+                    .settings-grid-bottom { grid-template-columns: 1fr !important; }
                 }
                 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
                 @keyframes fadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
-                @keyframes spin { to { transform: rotate(360deg); } }
-                 .hover-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
                 
+                .animate-spin { animation: spin 1s linear infinite; }
+                .animate-spin-slow { animation: spin 3s linear infinite; }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                
+                .hover-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+                .hover-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important; }
+                .hover-card:active { transform: translateY(0px); }
+
                 /* Switch Style */
-                .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+                .switch { position: relative; display: inline-block; width: 48px; height: 26px; }
                 .switch input { opacity: 0; width: 0; height: 0; }
-                .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; }
-                .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; }
+                .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .3s; }
+                .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .3s; }
                 input:checked + .slider { background-color: #15803d; }
                 input:focus + .slider { box-shadow: 0 0 1px #15803d; }
-                input:checked + .slider:before { transform: translateX(20px); }
+                input:checked + .slider:before { transform: translateX(22px); }
                 .slider.round { border-radius: 34px; }
                 .slider.round:before { border-radius: 50%; }
             `}</style>
@@ -772,33 +718,33 @@ export default function SettingsPage() {
 // ── Shared style helpers ──────────────────────────────────
 const btnGreenStyle: React.CSSProperties = {
     width: "100%", padding: "0.8rem", background: "#15803d",
-    color: "white", border: "none", borderRadius: "8px",
-    fontWeight: "600", cursor: "pointer", fontSize: "0.95rem",
+    color: "white", border: "none", borderRadius: "12px",
+    fontWeight: "750", cursor: "pointer", fontSize: "0.95rem",
     marginTop: "0.25rem", transition: "all 0.2s"
 };
 const labelStyle: React.CSSProperties = {
     display: "block", marginBottom: "0.5rem",
-    fontWeight: "600", fontSize: "0.875rem", color: "#374151"
+    fontWeight: "750", fontSize: "0.85rem", color: "#475569"
 };
 const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "0.7rem 0.85rem",
-    borderRadius: "8px", border: "1px solid #d1d5db",
-    fontSize: "0.95rem", outline: "none"
+    width: "100%", padding: "0.75rem 1rem",
+    borderRadius: "12px", border: "1px solid #d1d5db",
+    fontSize: "0.95rem", outline: "none", transition: "all 0.2s"
 };
 
 // ── Sub-components ────────────────────────────────────────
 function ModalWrapper({ children, onClose, wide }: { children: React.ReactNode; onClose: () => void; wide?: boolean }) {
     return (
         <div onClick={onClose} style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
-            backdropFilter: "blur(4px)", display: "flex", alignItems: "center",
-            justifyContent: "center", zIndex: 3000, padding: "1rem", animation: "fadeIn 0.25s ease"
+            position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.4)",
+            backdropFilter: "blur(6px)", display: "flex", alignItems: "center",
+            justifyContent: "center", zIndex: 3000, padding: "1rem", animation: "fadeIn 0.2s ease"
         }}>
             <div onClick={e => e.stopPropagation()} style={{
-                background: "white", borderRadius: "16px",
+                background: "white", borderRadius: "24px",
                 maxWidth: wide ? "600px" : "440px", width: "100%",
                 maxHeight: "92vh", overflow: "hidden", display: "flex",
-                flexDirection: "column", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)"
+                flexDirection: "column", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.15)"
             }}>
                 {children}
             </div>
@@ -808,10 +754,10 @@ function ModalWrapper({ children, onClose, wide }: { children: React.ReactNode; 
 
 function ModalHeader({ icon, title, onClose }: { icon: React.ReactNode; title: string; onClose: () => void }) {
     return (
-        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4" }}>
+        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                 {icon}
-                <h3 style={{ fontSize: "1.05rem", fontWeight: "700", color: "#166534", margin: 0 }}>{title}</h3>
+                <h3 style={{ fontSize: "1.05rem", fontWeight: "850", color: "#1e293b", margin: 0 }}>{title}</h3>
             </div>
             <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", color: "#9ca3af", display: "flex" }}>
                 <XCircle size={22} />

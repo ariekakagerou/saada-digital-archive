@@ -13,11 +13,22 @@ namespace AlumniSmartArchive.Backend.Services
     public class AiService : IAiService
     {
         private readonly HttpClient _httpClient;
+        private readonly IConfiguration _config;
 
-        public AiService(HttpClient httpClient)
+        public AiService(HttpClient httpClient, IConfiguration config)
         {
             _httpClient = httpClient;
-            _httpClient.BaseAddress = new Uri("http://localhost:5000"); // AI Service Address
+            _config = config;
+            
+            var aiUrl = _config["AiService:Url"] ?? "http://localhost:8000";
+            var apiKey = _config["AiService:ApiKey"] ?? "";
+
+            _httpClient.BaseAddress = new Uri(aiUrl);
+            
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                _httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+            }
         }
 
         public async Task<OcrResponse?> ProcessOcrAsync(Stream fileStream, string fileName)
@@ -64,7 +75,7 @@ namespace AlumniSmartArchive.Backend.Services
         {
             try
             {
-                var payload = new { query, candidates, threshold = 60 };
+                var payload = new { query, candidates, threshold = 50 };
                 var response = await _httpClient.PostAsJsonAsync("/fuzzy-search", payload);
                 response.EnsureSuccessStatusCode();
 

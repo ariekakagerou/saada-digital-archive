@@ -8,11 +8,12 @@ import {
     ChevronRight, ArrowRight
 } from "lucide-react";
 import Link from "next/link";
+import { searchAlumni } from "../../../services/api";
 
 interface GlobalResult {
     id: string;
     name: string;
-    type: "Buku Induk" | "Ijazah" | "Rapor" | "SKHU" | "Transkrip";
+    type: "Buku Induk" | "Ijazah" | "Rapor" | "SKL" | "Transkrip";
     score: number;
     identifier: string; // NISN or Filename
     link: string;
@@ -24,55 +25,35 @@ export default function GlobalSearchPage() {
     const [isSearching, setIsSearching] = useState(false);
     const [results, setResults] = useState<GlobalResult[] | null>(null);
 
-    const handleGlobalSearch = (e: React.FormEvent) => {
+    const handleGlobalSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!query) return;
         
         setIsSearching(true);
         setResults(null);
 
-        // Simulated Global Cross-Database Search
-        setTimeout(() => {
+        try {
+            const res = await searchAlumni(query);
+            if (res.data) {
+                const mapped = res.data.map((item: any) => ({
+                    id: item.id.toString(),
+                    name: item.type === "Buku Induk" ? (item.namaLengkap || item.fullName) : (item.identifier || "Dokumen Arsip"),
+                    type: (item.type || "Buku Induk") as "Buku Induk" | "Ijazah" | "Rapor" | "SKL" | "Transkrip",
+                    score: item.matchScore || 100,
+                    identifier: item.type === "Buku Induk" ? (item.nisn || item.nis || "Data Alumni") : "Verified by AI",
+                    link: item.type === "Buku Induk" ? `/alumni/${item.id}` : (item.link || "/alumni"),
+                    details: item.details || `Alumni Angkatan ${item.tahunLulus || item.graduationYear} • Match: ${item.matchType || "Exact"}`
+                }));
+                setResults(mapped);
+            } else {
+                setResults([]);
+            }
+        } catch (err) {
+            console.error("Gagal melakukan pencarian global:", err);
+            setResults([]);
+        } finally {
             setIsSearching(false);
-            setResults([
-                { 
-                    id: "1", 
-                    name: "Ahmad Dahlan", 
-                    type: "Buku Induk", 
-                    score: 100, 
-                    identifier: "0012345678", 
-                    link: "/buku-induk",
-                    details: "Alumni Angkatan 2020 • Status: Lengkap"
-                },
-                { 
-                    id: "2", 
-                    name: "Scan_Ijazah_Ahmad_D.pdf", 
-                    type: "Ijazah", 
-                    score: 92, 
-                    identifier: "Verified by AI", 
-                    link: "/dokumen-ijazah",
-                    details: "Ditemukan pada arsip Ijazah digital"
-                },
-                { 
-                    id: "3", 
-                    name: "Rekap_Rapor_Ahmad.pdf", 
-                    type: "Rapor", 
-                    score: 88, 
-                    identifier: "Semester 1-6", 
-                    link: "/dokumen-rapor",
-                    details: "Terdeteksi 1 dokumen nilai rapor"
-                },
-                { 
-                    id: "4", 
-                    name: "SKHU_Ahmad_Dahlan.jpg", 
-                    type: "SKHU", 
-                    score: 85, 
-                    identifier: "Lulus 2020", 
-                    link: "/dokumen-skhu",
-                    details: "Arsip SKHU sementara"
-                }
-            ]);
-        }, 1500);
+        }
     };
 
     const getIcon = (type: string) => {
@@ -80,7 +61,7 @@ export default function GlobalSearchPage() {
             case "Buku Induk": return <BookOpen size={20} />;
             case "Ijazah": return <GraduationCap size={20} />;
             case "Rapor": return <FileText size={20} />;
-            case "SKHU": return <FileCheck size={20} />;
+            case "SKL": return <FileCheck size={20} />;
             case "Transkrip": return <BarChart size={20} />;
             default: return <Search size={20} />;
         }
@@ -98,7 +79,7 @@ export default function GlobalSearchPage() {
                             <span>Powered by SAADA AI</span>
                         </div>
                         <h1>Pusat Pencarian Global</h1>
-                        <p>Cari data alumni di seluruh modul (Buku Induk, Ijazah, Rapor, dll) dalam satu klik.</p>
+                        <p>Cari data alumni di seluruh modul (Buku Induk, Ijazah, Legger Kelas, dll) dalam satu klik.</p>
                     </header>
 
                     {/* Universal Search Bar */}
@@ -156,6 +137,14 @@ export default function GlobalSearchPage() {
                             </div>
                         )}
 
+                        {results && results.length === 0 && !isSearching && (
+                            <div className="initial-state">
+                                <div className="ghost-icon">😔</div>
+                                <h3>Tidak Ada Hasil</h3>
+                                <p>Tidak ditemukan data untuk kata kunci <strong>&quot;{query}&quot;</strong>. Coba gunakan ejaan yang berbeda.</p>
+                            </div>
+                        )}
+
                         {!results && !isSearching && (
                             <div className="initial-state">
                                 <div className="ghost-icon">🔍</div>
@@ -208,7 +197,7 @@ export default function GlobalSearchPage() {
                 .result-type-icon.buku-induk { background: #ecfdf5; color: #10b981; }
                 .result-type-icon.ijazah { background: #fffbeb; color: #d97706; }
                 .result-type-icon.rapor { background: #f5f3ff; color: #7c3aed; }
-                .result-type-icon.skhu { background: #fef2f2; color: #dc2626; }
+                .result-type-icon.skl { background: #fef2f2; color: #dc2626; }
                 .result-type-icon.transkrip { background: #f0f9ff; color: #0284c7; }
 
                 .result-content { flex: 1; }

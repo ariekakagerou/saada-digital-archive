@@ -4,6 +4,7 @@ import { useState } from "react";
 import AdminLayout from "../../../components/AdminLayout";
 import { Upload, FileDown, CheckCircle, XCircle, Loader2, AlertCircle, Trash2, ArrowRight } from "lucide-react";
 import * as api from "../../../services/api";
+import * as XLSX from "xlsx";
 
 export default function ImportExcelPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -20,12 +21,12 @@ export default function ImportExcelPage() {
     const downloadTemplate = () => {
         const headers = [
             "NIS", "NISN", "NamaLengkap", "JenisKelamin", "TempatLahir", "TanggalLahir", 
-            "Agama", "TahunMasuk", "TahunLulus", "StatusKelulusan", "NomorIjazah", 
+            "Agama", "TahunMasuk", "TahunLulus", "StatusKelulusan", "NomorIjazah", "NomorSkhun",
             "NamaAyah", "NamaIbu", "AlamatOrangTua"
         ];
         const exampleRow = [
             "21005", "0021005678", "Contoh Nama Alumni", "L", "Bogor", "2005-08-01", 
-            "Islam", "2021", "2024", "Lulus", "DN-05/MTs/001", 
+            "Islam", "2021", "2024", "Lulus", "DN-05/MTs/001", "SKHUN/MTs/001/2024",
             "Nama Ayah", "Nama Ibu", "Jl. Contoh Alamat No. 1"
         ];
         
@@ -41,7 +42,7 @@ export default function ImportExcelPage() {
         document.body.removeChild(link);
     };
 
-    // Handle File Upload & Parsing (Manual CSV for now, or dynamic script loading for XLSX)
+    // Handle File Upload & Parsing (Supports .xlsx, .xls, and .csv using SheetJS)
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -52,33 +53,85 @@ export default function ImportExcelPage() {
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                const text = event.target?.result as string;
-                const lines = text.split("\n");
-                const headers = lines[0].split(",").map(h => h.trim());
-                
-                const data = lines.slice(1).filter(l => l.trim() !== "").map(line => {
-                    const values = line.split(",").map(v => v.trim());
-                    const obj: any = {};
-                    headers.forEach((header, index) => {
-                        obj[header] = values[index];
-                    });
-                    return obj;
+                const bstr = event.target?.result;
+                const workbook = XLSX.read(bstr, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const rawData = XLSX.utils.sheet_to_json<any>(sheet);
+
+                if (rawData.length === 0) {
+                    showToast("Peringatan: File Excel/CSV kosong atau tidak berisi data.", "error");
+                    setPreviewData([]);
+                    setFileName("");
+                    return;
+                }
+
+                // Helper to match column header names flexibly
+                const findValue = (row: any, keys: string[]) => {
+                    const matchedKey = Object.keys(row).find(k => 
+                        keys.some(key => k.toLowerCase().trim() === key.toLowerCase().trim())
+                    );
+                    return matchedKey ? String(row[matchedKey]).trim() : "";
+                };
+
+                // Map rawData to CreateBukuIndukRequest format
+                const mappedData = rawData.map(row => {
+                    return {
+                        nis: findValue(row, ["nis", "no. induk", "nomor induk"]),
+                        nisn: findValue(row, ["nisn", "nomor nisn"]),
+                        namaLengkap: findValue(row, ["nama lengkap", "nama", "nama siswa", "namalengkap"]),
+                        jenisKelamin: findValue(row, ["jenis kelamin", "jk", "l/p", "gender", "jeniskelamin"])?.toUpperCase() === "P" ? "P" : "L",
+                        tempatLahir: findValue(row, ["tempat lahir", "tempat", "tempatlahir"]),
+                        tanggalLahir: findValue(row, ["tanggal lahir", "tgl lahir", "tanggallahir"]),
+                        agama: findValue(row, ["agama"]) || "Islam",
+                        kewarganegaraan: findValue(row, ["kewarganegaraan", "warga negara"]) || "WNI",
+                        namaAyah: findValue(row, ["nama ayah", "ayah", "namaayah"]),
+                        namaIbu: findValue(row, ["nama ibu", "ibu", "namaibu"]),
+                        pekerjaanAyah: findValue(row, ["pekerjaan ayah"]),
+                        pekerjaanIbu: findValue(row, ["pekerjaan ibu"]),
+                        alamatOrangTua: findValue(row, ["alamat orang tua", "alamat", "alamat ortu", "alamatorangtua"]),
+                        noHpWali: findValue(row, ["no hp wali", "no hp ortu", "telepon wali"]),
+                        tahunMasuk: findValue(row, ["tahun masuk", "th masuk", "tahunmasuk"]),
+                        asalSekolah: findValue(row, ["asal sekolah", "sekolah asal"]),
+                        kelasMasuk: findValue(row, ["kelas masuk"]) || "VII",
+                        jurusan: findValue(row, ["jurusan"]) || "-",
+                        tahunLulus: findValue(row, ["tahun lulus", "th lulus", "tahunlulus"]),
+                        nomorIjazah: findValue(row, ["nomor ijazah", "no ijazah", "nomorijazah"]),
+                        nomorSkhun: findValue(row, ["nomor skhun", "no skhun", "nomorskhun", "nomor skh", "no skh"]),
+                        statusSiswa: findValue(row, ["status siswa", "status"]) || "Aktif",
+                        keteranganStatus: findValue(row, ["keterangan status", "keterangan"]),
+                        statusArsip: findValue(row, ["status arsip", "arsip"]) || "Lengkap"
+                    };
                 });
 
-                setPreviewData(data);
-                showToast(`Berhasil membaca ${data.length} baris data.`);
+                // Filter out entries that don't have Nama Lengkap or NISN (as these are required)
+                const validData = mappedData.filter(d => d.namaLengkap && d.nisn);
+
+                if (validData.length === 0) {
+                    showToast("Peringatan: Tidak ada data valid ditemukan (Nama Lengkap dan NISN wajib diisi).", "error");
+                    setPreviewData([]);
+                    setFileName("");
+                } else {
+                    setPreviewData(validData);
+                    showToast(`Berhasil membaca ${validData.length} baris data dari file.`);
+                }
             } catch (err) {
                 showToast("Gagal membaca file. Pastikan formatnya benar.", "error");
+                setPreviewData([]);
+                setFileName("");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        reader.readAsText(file);
+        reader.readAsBinaryString(file);
     };
 
     const handleImport = async () => {
-        if (previewData.length === 0) return;
+        if (previewData.length === 0) {
+            showToast("Peringatan: Tidak ada data untuk di-import.", "error");
+            return;
+        }
 
         setIsLoading(true);
         try {
@@ -154,13 +207,13 @@ export default function ImportExcelPage() {
                             <h3 style={{ fontSize: "1.1rem", fontWeight: "600", marginBottom: "0.5rem" }}>
                                 {fileName ? fileName : "Pilih File Excel/CSV"}
                             </h3>
-                            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1.5rem" }}>Format yang didukung adalah .csv (Excel juga bisa menyimpannya sebagai .csv)</p>
+                            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1.5rem" }}>Format yang didukung adalah .xlsx, .xls, atau .csv</p>
                             
                             <input 
                                 type="file" 
                                 id="excel-upload" 
                                 style={{ display: "none" }} 
-                                accept=".csv"
+                                accept=".xlsx, .xls, .csv"
                                 onChange={handleFileChange}
                             />
                             <button 
@@ -197,9 +250,9 @@ export default function ImportExcelPage() {
                                         <tbody>
                                             {previewData.slice(0, 5).map((row, i) => (
                                                 <tr key={i}>
-                                                    <td style={{ padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>{row.NISN}</td>
-                                                    <td style={{ padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>{row.NamaLengkap}</td>
-                                                    <td style={{ padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>{row.TahunLulus}</td>
+                                                    <td style={{ padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>{row.nisn || row.NISN || "-"}</td>
+                                                    <td style={{ padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>{row.namaLengkap || row.NamaLengkap || "-"}</td>
+                                                    <td style={{ padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>{row.tahunLulus || row.TahunLulus || "-"}</td>
                                                 </tr>
                                             ))}
                                             {previewData.length > 5 && (
