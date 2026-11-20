@@ -86,6 +86,20 @@ function LoginPageContent() {
         }
     };
 
+    const handleDemoLogin = () => {
+        localStorage.setItem("user", JSON.stringify({
+            username: "demo_reviewer",
+            fullName: "Guest Reviewer (Portfolio Mode)",
+            role: "Admin",
+            token: "demo_portfolio_token_2026"
+        }));
+        document.cookie = `saada_token=demo_portfolio_token_2026; path=/; max-age=${8 * 3600}; SameSite=Strict`;
+        setLoginSuccess(true);
+        setTimeout(() => {
+            router.push("/dashboard");
+        }, 1000);
+    };
+
     const handleGoogleSuccess = async (credentialResponse: any) => {
         setLoading(true);
         setError("");
@@ -242,6 +256,40 @@ function LoginPageContent() {
                                 ) : (
                                     <>Masuk Sekarang <ArrowRight size={20} /></>
                                 )}
+                            </button>
+
+                            {/* Tombol Portofolio / Guest Demo */}
+                            <button
+                                type="button"
+                                onClick={handleDemoLogin}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "0.6rem",
+                                    width: "100%",
+                                    padding: "0.75rem 1rem",
+                                    marginTop: "0.75rem",
+                                    background: "rgba(16, 185, 129, 0.12)",
+                                    border: "1px solid rgba(16, 185, 129, 0.35)",
+                                    borderRadius: "10px",
+                                    color: "#10b981",
+                                    fontWeight: "600",
+                                    fontSize: "0.92rem",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = "rgba(16, 185, 129, 0.2)";
+                                    e.currentTarget.style.borderColor = "rgba(16, 185, 129, 0.6)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "rgba(16, 185, 129, 0.12)";
+                                    e.currentTarget.style.borderColor = "rgba(16, 185, 129, 0.35)";
+                                }}
+                            >
+                                <Sparkles size={18} />
+                                <span>Akses Cepat (Demo Portofolio)</span>
                             </button>
 
                             <div className="login-divider"><span>ATAU</span></div>

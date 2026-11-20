@@ -1,6 +1,8 @@
+import { getMockResponseForUrl } from "./mockDemoData";
+
 const getApiBaseUrl = (): string => {
   if (typeof window !== "undefined") {
-    return `http://${window.location.hostname}:5084/api`;
+    return process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:5084/api`;
   }
   return process.env.NEXT_PUBLIC_API_URL || "http://localhost:5084/api";
 };
@@ -32,21 +34,42 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
  * secara global di seluruh aplikasi.
  */
 async function saadaFetch(url: string, options: RequestInit = {}) {
+  const token = getAuthToken();
+  const isDemoMode = token === "demo_portfolio_token_2026";
+
   let response: Response;
   try {
     response = await fetch(url, options);
   } catch (err: any) {
+    // Jika backend offline (seperti di Vercel tanpa backend) atau dalam Demo Mode:
+    if (isDemoMode || err?.name === "TypeError" || err?.message?.includes("fetch")) {
+      console.info(`[Demo Fallback] Serving mock data for: ${url}`);
+      const mockData = getMockResponseForUrl(url, options.method || "GET");
+      return new Response(JSON.stringify(mockData), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     if (err?.name === "TypeError" || err?.message === "Failed to fetch" || err?.message?.includes("fetch")) {
       throw new Error("Gagal terhubung ke server backend. Pastikan server (saada-backend) aktif.");
     }
     throw err;
   }
 
-  if (response.status === 401) {
+  // Jika response error dan dalam mode demo, fallback ke mock data
+  if (!response.ok && isDemoMode) {
+    const mockData = getMockResponseForUrl(url, options.method || "GET");
+    return new Response(JSON.stringify(mockData), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  if (response.status === 401 && !isDemoMode) {
     console.warn(`[Auth Warning] 401 Unauthorized for URL: ${url}`);
     if (typeof window !== "undefined" && window.location.pathname !== "/login" && !url.includes("/auth/")) {
-      const token = getAuthToken();
-      if (!token) {
+      const currentToken = getAuthToken();
+      if (!currentToken) {
         localStorage.removeItem("user");
         document.cookie = "saada_token=; path=/; max-age=0; SameSite=Strict";
         window.location.href = "/login?error=session_expired";
